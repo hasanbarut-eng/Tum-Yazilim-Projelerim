@@ -1,2 +1,0 @@
-cd C:\Users\hbaru\OneDrive\Desktop
-streamlit run BorsaTerminali_V2.py
