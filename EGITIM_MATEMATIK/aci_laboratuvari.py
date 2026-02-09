@@ -2,81 +2,78 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Sayfa Ayarları
-st.set_page_config(page_title="Matematik Açı Laboratuvarı", layout="wide")
+# Sayfa yapılandırması
+st.set_page_config(page_title="Hasan Hoca Açı Laboratuvarı", layout="wide")
 
 def main():
-    st.title("📐 Paralel Doğrular ve Kesen İlişkileri")
+    st.title("📐 Hasan Bey ile Açıları Keşfet")
     st.markdown("---")
 
-    # Kenar Çubuğu - Kontrol Paneli
-    st.sidebar.header("🛠️ Laboratuvar Ayarları")
-    angle_val = st.sidebar.slider("Kesen Doğru Açısı (°)", 10, 170, 65, help="Açıyı değiştirmek için kaydırın.")
-    show_names = st.sidebar.checkbox("Açı İsimlerini Göster", value=True)
+    # Sol panel: Kontroller
+    st.sidebar.header("🕹️ Kontrol Paneli")
+    angle_val = st.sidebar.slider("Kesen Açısını Ayarla (°)", 10, 170, 72)
     
-    # Sekmelerle Bölümlere Ayırma
-    tab1, tab2, tab3 = st.tabs(["🎮 İnteraktif Çizim", "📖 Kural Sözlüğü", "🧠 Bilgi Kontrol"])
+    st.sidebar.subheader("🎯 Neyi Görmek İstersin?")
+    mode = st.sidebar.radio(
+        "Açı Türünü Seçin:",
+        ["Hepsini Göster", "Yöndeş Açılar", "Ters Açılar", "İç Ters (Z Kuralı)", "Dış Ters Açılar"]
+    )
 
-    with tab1:
-        st.subheader("Doğrular Üzerinde Açıları Keşfedin")
-        try:
-            fig, ax = plt.subplots(figsize=(10, 6))
-            x = np.linspace(-10, 10, 100)
-            
-            # Paralel Doğrular (d1 ve d2)
-            ax.plot(x, np.zeros_like(x) + 2, color='navy', lw=3, label="d1 Doğrusu")
-            ax.plot(x, np.zeros_like(x) - 2, color='navy', lw=3, label="d2 Doğrusu")
-            
-            # Kesen Doğru (k)
-            rad = np.radians(angle_val)
-            slope = np.tan(rad)
-            ax.plot(x, slope * x, color='crimson', ls='--', lw=2, label="k Keseni")
+    # Matematiksel Hesaplamalar
+    komsu_aci = 180 - angle_val
+    
+    # Çizim Ekranı
+    fig, ax = plt.subplots(figsize=(12, 8))
+    x = np.linspace(-10, 10, 100)
+    
+    # Paralel Doğrular (K-N ve P-T)
+    ax.plot(x, np.zeros_like(x) + 3, color='black', lw=2) # Üst
+    ax.plot(x, np.zeros_like(x) - 3, color='black', lw=2) # Alt
+    
+    # Kesen Doğru (M-S)
+    rad = np.radians(angle_val)
+    slope = np.tan(rad)
+    ax.plot(x, slope * x, color='gray', ls='--', alpha=0.5)
 
-            # Açı İsimlendirme ve Noktalar
-            if show_names:
-                # Üst Kesişim (d1 ve k)
-                ax.text(0.5, 2.2, f"a = {angle_val}°", fontsize=12, fontweight='bold')
-                ax.text(-1.5, 1.5, f"b = {180-angle_val}°", fontsize=12)
-                # Alt Kesişim (d2 ve k)
-                ax.text(-0.5, -2.5, f"c = {angle_val}°", fontsize=12, fontweight='bold', color='green')
-                ax.text(1.5, -1.8, f"d = {180-angle_val}°", fontsize=12)
+    # Açıları ve Renkleri Belirleme
+    def draw_angle_text(x_pos, y_pos, label, val, color='black', weight='normal', size=12):
+        ax.text(x_pos, y_pos, f"{label}\n{val}°", fontsize=size, color=color, 
+                fontweight=weight, ha='center', bbox=dict(facecolor='white', alpha=0.6, edgecolor='none'))
 
-            # Grafik Süsleme
-            ax.set_ylim(-6, 6)
-            ax.set_xlim(-8, 8)
-            ax.axhline(0, color='black', lw=0.5)
-            ax.axvline(0, color='black', lw=0.5)
-            ax.legend()
-            ax.set_title(f"Açı Değişimi: {angle_val}°", fontsize=14)
-            
-            st.pyplot(fig)
-            st.info("💡 **Yöndeş Açı:** Aynı yöne bakan a ve c açılarının her zaman eşit olduğunu gözlemleyin!")
-            
-        except Exception as e:
-            st.error(f"Çizim hatası oluştu: {e}")
+    # Üst Kesişim Noktası L (0, 3) | Alt Kesişim Noktası R (0, -3) için ofsetler
+    # Modlara göre renk ve vurgu belirleme
+    yondesh_color = "red" if mode == "Yöndeş Açılar" else "black"
+    ters_color = "blue" if mode == "Ters Açılar" else "black"
+    ic_ters_color = "green" if mode == "İç Ters (Z Kuralı)" else "black"
 
-    with tab2:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.success("### 🔠 Açı Çeşitleri")
-            st.write("- **İç Ters Açılar:** Paralel doğruların içindeki zıt açılar (Z Kuralı).")
-            st.write("- **Dış Ters Açılar:** Dışarıda kalan zıt yönlü açılar.")
-            st.write("- **Yöndeş Açılar:** Aynı yöne bakan açılar (Eşittir).")
-        with col2:
-            st.warning("### 📏 Önemli Kurallar")
-            st.write(f"1. **Tümler:** a + b = 180°")
-            st.write(f"2. **Yöndeşlik:** a = c = {angle_val}°")
-            st.write(f"3. **U Kuralı:** Ardışık iç açıların toplamı 180 derecedir.")
+    # Açı Yerleşimleri (Görseldeki K, L, M, N, P, R, S, T harf düzenine uygun)
+    # Üst Bölge
+    draw_angle_text(-1, 3.5, "K-L-M", angle_val, 
+                    color=yondesh_color if mode == "Yöndeş Açılar" else ters_color if mode == "Ters Açılar" else "black",
+                    weight='bold' if mode in ["Yöndeş Açılar", "Ters Açılar"] else 'normal')
+    
+    draw_angle_text(1, 3.5, "M-L-N", komsu_aci)
 
-    with tab3:
-        st.subheader("Öğrenci Test Paneli")
-        user_guess = st.number_input("Ekranda yeşil ile gösterilen 'c' açısı kaç derecedir?", min_value=0, max_value=360)
-        if st.button("Cevabı Kontrol Et"):
-            if user_guess == angle_val:
-                st.balloons()
-                st.success("Tebrikler! Yöndeş açıların eşit olduğunu kavradın.")
-            else:
-                st.error(f"Maalesef yanlış. Yöndeş olduğu için {angle_val}° olmalıydı.")
+    # Alt Bölge
+    draw_angle_text(-1, -2.5, "P-R-L", komsu_aci)
+    
+    draw_angle_text(1, -2.5, "L-R-T", angle_val, 
+                    color=yondesh_color if mode == "Yöndeş Açılar" else ic_ters_color if mode == "İç Ters (Z Kuralı)" else "black",
+                    weight='bold' if mode in ["Yöndeş Açılar", "İç Ters (Z Kuralı)"] else 'normal')
+
+    # Grafik Ayarları
+    ax.set_ylim(-6, 6)
+    ax.set_xlim(-6, 6)
+    ax.axis('off') # Eksenleri gizle, sadece çizim kalsın
+    
+    st.pyplot(fig)
+
+    # Dinamik Açıklama Metni
+    st.info(f"💡 **Şu an incelenen:** {mode}")
+    if mode == "Yöndeş Açılar":
+        st.write("Aynı yöne bakan açılar eşittir. Kırmızı ile vurgulanan açılara dikkat edin!")
+    elif mode == "Ters Açılar":
+        st.write("Aynı noktada sırt sırta veren açılar eşittir.")
 
 if __name__ == "__main__":
     main()
