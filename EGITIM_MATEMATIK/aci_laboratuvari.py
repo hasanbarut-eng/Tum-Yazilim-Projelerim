@@ -1,37 +1,31 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Sayfa Yapılandırması
 st.set_page_config(page_title="Hasan Bey Geometri Akademisi", layout="wide")
 
 def main():
-    st.markdown("<h1 style='text-align: center; color: #2C3E50;'>📐 İnteraktif Açı Laboratuvarı</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Hasan Bey ile açıların kurallarını ve isimlerini keşfedin.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #2C3E50;'>📐 İnteraktif Nokta ve Açı Laboratuvarı</h1>", unsafe_allow_html=True)
 
-    # ANA PANEL (Öğrencilerin görebilmesi için doğrudan ekranda)
     col1, col2 = st.columns([1, 3])
     
     with col1:
         st.markdown("### 🕹️ Kontrol Paneli")
-        aci_derece = st.slider("Kesen Açısını Ayarla (°)", 30, 150, 70)
-        
-        st.markdown("### 🎯 Açı Türleri")
+        aci_derece = st.slider("Kesen Açısını Ayarla (°)", 30, 150, 65)
         konu = st.radio(
-            "Görmek istediğiniz kuralı seçin:",
-            ["Yöndeş Açılar", "Ters Açılar", "İç Ters Açılar", "Dış Ters Açılar", "U Kuralı (Karşı Durumlu)"]
+            "Görselleştirilecek Kural:",
+            ["Yöndeş Açılar", "Ters Açılar", "İç Ters Açılar", "Dış Ters Açılar", "U Kuralı"]
         )
 
     with col2:
-        # HTML/JS - Dinamik Matematiksel Çizim
         html_kod = f"""
-        <div id="geometri-alani" style="display: flex; justify-content: center; background: #ffffff; border: 2px solid #eee; border-radius: 15px;"></div>
+        <div id="geometri-alani" style="display: flex; justify-content: center; background: #fff; border: 1px solid #ddd; border-radius: 15px;"></div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
         <script>
         let a = {aci_derece};
         let mod = "{konu}";
 
         function setup() {{
-            let canvas = createCanvas(700, 450);
+            let canvas = createCanvas(750, 500);
             canvas.parent('geometri-alani');
             textAlign(CENTER, CENTER);
         }}
@@ -39,83 +33,77 @@ def main():
         function draw() {{
             background(255);
             let rad = radians(a);
-            let d1_y = 150; 
-            let d2_y = 300; 
+            let d1_y = 180, d2_y = 350;
             let center_x = width / 2;
             let slope_inv = 1 / tan(rad);
             let x_offset = (d2_y - d1_y) * slope_inv;
 
-            // Kesişim Noktaları
-            let O = {{ x: center_x, y: d1_y }};
-            let D = {{ x: center_x - x_offset, y: d2_y }};
+            let O = {{ x: center_x, y: d1_y }}; // Üst Kesişim
+            let D = {{ x: center_x - x_offset, y: d2_y }}; // Alt Kesişim
 
-            // 1. Paralel Doğrular
-            stroke(0); strokeWeight(4);
-            line(100, d1_y, 600, d1_y); 
-            line(100, d2_y, 600, d2_y); 
+            // 1. Doğrular
+            stroke(0); strokeWeight(3);
+            line(100, d1_y, 650, d1_y); line(100, d2_y, 650, d2_y); // Paraleller
+            stroke(100, 150); line(O.x + 150*slope_inv, O.y-150, D.x - 150*slope_inv, D.y+150); // Kesen
+
+            // 2. Noktaları Çiz (Nokta İşaretleri)
+            fill(0); noStroke();
+            let pts = [
+                {{x: 200, y: d1_y, n: "C"}}, {{x: 600, y: d1_y, n: "B"}}, // Üst doğru noktaları
+                {{x: D.x - 200, y: d2_y, n: "F"}}, {{x: D.x + 200, y: d2_y, n: "E"}}, // Alt doğru noktaları
+                {{x: O.x + 100*slope_inv, y: O.y-100, n: "A"}}, // Kesen üst
+                {{x: D.x - 100*slope_inv, y: D.y+100, n: "G"}}, // Kesen alt
+                {{x: O.x, y: O.y, n: "O"}}, {{x: D.x, y: D.y, n: "D"}} // Kesişimler
+            ];
             
-            // 2. Kesen Doğru
-            stroke(100, 100, 100, 150); strokeWeight(2);
-            line(O.x + 120*slope_inv, O.y - 120, D.x - 120*slope_inv, D.y + 120);
+            pts.forEach(p => {{
+                ellipse(p.x, p.y, 8, 8); // Nokta simgesi
+                textSize(18); textStyle(BOLD);
+                text(p.n, p.x + 15, p.y - 15); // Harf
+            }});
 
-            // 3. Renkler
-            let cRed = color(231, 76, 60, 200);
-            let cBlue = color(52, 152, 219, 200);
-            let cGreen = color(46, 204, 113, 200);
-            let cOrange = color(230, 126, 34, 200);
+            // 3. Açı Boyama Mantığı
+            let cY = color(231, 76, 60, 180); // Kırmızı
+            let cI = color(46, 204, 113, 180); // Yeşil
 
-            // 4. Açı Mantığı
             if(mod == "Yöndeş Açılar") {{
-                drawArc(O.x, O.y, 0, -rad, cRed, "AOC");
-                drawArc(D.x, D.y, 0, -rad, cRed, "ADF");
+                drawArc(O.x, O.y, 0, -rad, cY, "AOC");
+                drawArc(D.x, D.y, 0, -rad, cY, "ADF");
             }} else if(mod == "Ters Açılar") {{
-                drawArc(O.x, O.y, 0, -rad, cBlue, "AOC");
-                drawArc(O.x, O.y, PI, PI-rad, cBlue, "BOG");
+                drawArc(O.x, O.y, 0, -rad, cY, "AOC");
+                drawArc(O.x, O.y, PI, PI-rad, cY, "BOG");
             }} else if(mod == "İç Ters Açılar") {{
-                drawArc(O.x, O.y, PI, PI-rad, cGreen, "BOG");
-                drawArc(D.x, D.y, 0, -rad, cGreen, "ADF");
+                drawArc(O.x, O.y, PI, PI-rad, cI, "BOG");
+                drawArc(D.x, D.y, 0, -rad, cI, "ADF");
             }} else if(mod == "Dış Ters Açılar") {{
-                drawArc(O.x, O.y, 0, -rad, cOrange, "AOC");
-                drawArc(D.x, D.y, PI, PI-rad, cOrange, "GDF'");
-            }} else if(mod == "U Kuralı (Karşı Durumlu)") {{
-                drawArc(O.x, O.y, PI, PI-rad, color(155, 89, 182, 200), "BOG");
-                drawArc(D.x, D.y, -PI, -rad, color(155, 89, 182, 200), "EDO");
+                drawArc(O.x, O.y, 0, -rad, color(52, 152, 219), "AOC");
+                drawArc(D.x, D.y, PI, PI-rad, color(52, 152, 219), "GDE");
+            }} else if(mod == "U Kuralı") {{
+                drawArc(O.x, O.y, PI, PI-rad, color(155, 89, 182), "BOG");
+                drawArc(D.x, D.y, -PI, -rad, color(155, 89, 182), "EDO");
             }}
         }}
 
-        function drawArc(x, y, start, end, col, label) {{
+        function drawArc(x, y, st, en, col, lbl) {{
             push(); noStroke(); fill(col);
-            arc(x, y, 80, 80, end, start);
-            let mid = (start + end) / 2;
-            fill(0); textSize(14); textStyle(BOLD);
-            text(label, x + 65 * cos(mid), y + 65 * sin(mid));
+            arc(x, y, 70, 70, en, st);
+            let m = (st + en) / 2;
+            fill(0); textSize(14); text(lbl, x + 60 * cos(m), y + 60 * sin(m));
             pop();
         }}
         </script>
         """
-        components.html(html_kod, height=480)
+        components.html(html_kod, height=520)
 
-    # ALT BİLGİ ALANI (İsimler ve Eşitlikler)
+    # Dinamik Eşitlik Tablosu
     st.markdown("---")
-    st.subheader("📝 Açı İlişkileri ve İsimlendirme")
-    
+    st.subheader("📝 Matematiksel Gösterim")
     if konu == "Yöndeş Açılar":
-        st.success(f"✅ **Yöndeş Açılar:** AOC = ADF = {aci_derece}°")
-        st.write("Aynı yöne bakan açıların ölçüleri birbirine eşittir.")
-    elif konu == "Ters Açılar":
-        st.info(f"✅ **Ters Açılar:** AOC = BOG = {aci_derece}°")
-        st.write("Zıt yönlere bakan (sırt sırta veren) açıların ölçüleri eşittir.")
+        st.success(f"m(AOC) = m(ADF) = {aci_derece}°")
     elif konu == "İç Ters Açılar":
-        st.success(f"✅ **İç Ters (Z Kuralı):** BOG = ADF = {aci_derece}°")
-        st.write("Paralel doğruların arasında kalan ve kesenin zıt tarafında olan açılar eşittir.")
-    elif konu == "Dış Ters Açılar":
-        st.warning(f"✅ **Dış Ters Açılar:** AOC = GDF' = {aci_derece}°")
-        st.write("Paralel doğruların dışında kalan ve kesenin zıt tarafında olan açılar eşittir.")
-    elif konu == "U Kuralı (Karşı Durumlu)":
-        toplam = 180
-        komsu = 180 - aci_derece
-        st.error(f"✅ **U Kuralı:** BOG ({aci_derece}°) + EDO ({komsu}°) = {toplam}°")
-        st.write("Paralel doğruların arasında birbirine bakan açıların toplamı 180 derecedir.")
+        st.info(f"m(BOG) = m(ADF) = {aci_derece}° (Z Kuralı)")
+    elif konu == "U Kuralı":
+        st.warning(f"m(BOG) + m(EDO) = {aci_derece}° + {180-aci_derece}° = 180°")
 
 if __name__ == "__main__":
     main()
