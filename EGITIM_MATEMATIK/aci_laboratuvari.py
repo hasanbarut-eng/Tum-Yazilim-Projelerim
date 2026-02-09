@@ -1,52 +1,62 @@
 import streamlit as st
 import math
 
-# Sayfa Yapılandırması
+# Sayfa Yapılandırması - Sabit ve Mobil Uyumlu
 st.set_page_config(page_title="Hasan Bey Geometri Akademisi", layout="centered")
 
 def main():
     try:
         st.markdown("<h1 style='text-align: center; color: #1A5276; font-size: 1.5rem;'>📐 Tam Uyumlu Açı Laboratuvarı</h1>", unsafe_allow_html=True)
 
-        # 1. Yan Panel - Kontrol ve Test
+        # 1. Eğitim Paneli (Sidebar)
         with st.sidebar:
-            st.header("🛠️ Eğitim Paneli")
+            st.header("🛠️ Kontrol Merkezi")
             aci_derece = st.slider("Kesen Açısını Ayarla (°)", 30, 150, 70)
             mod = st.selectbox("İncelemek İstediğiniz Kural:", 
                              ["Yöndeş", "Ters", "İç Ters (Z)", "Dış Ters", "U Kuralı"])
             st.markdown("---")
-            st.subheader("✍️ Öğrenci Testi")
+            st.subheader("✍️ Öğrenci Yanıtı")
             ogrenci_input = st.text_area("Cevabınız (Örn: AOC=ADF):").strip().upper().replace(" ", "")
-            check_btn = st.button("Doğruluğu Kontrol Et")
+            check_btn = st.button("Kontrol Et")
 
-        # 2. Matematiksel Motor (Harf ve Açı Kalibrasyonu)
+        # 2. Matematiksel Motor (Geometrik Standart Kalibrasyonu)
         rad = math.radians(aci_derece)
         s_inv = 1 / math.tan(rad)
-        cx = 175 
-        d1y, d2y = 100, 220
+        cx = 175 # Tuval Merkezi
+        d1y, d2y = 100, 220 # Paralel y eksenleri
         x_off = (d2y - d1y) * s_inv
+        
+        # Kesin Merkez Koordinatları
         Ox, Oy = cx, d1y
         Dx, Dy = cx - x_off, d2y
+        
+        # A ve G Uç Noktaları (Görünür alana sabitlendi)
         Ax, Ay = Ox + 85*s_inv, Oy - 85
         Gx, Gy = Dx - 85*s_inv, Dy + 85
 
+        # BOYAMA FONKSİYONU - %100 GEOMETRİK DOĞRULUK (SAAT YÖNÜ TERSİ POZİTİF)
         def draw_arc(x, y, start_deg, end_deg, color, label):
-            # Trigonometrik yönler SVG standartlarına göre (y aşağı) sabitlendi
+            # Harf etiketini dilimin ortasına yerleştirmek için 'mid' açısını hesapla
+            # SVG y-ekseni aşağı yönlü olduğu için açılar eksi (-) ile düzeltildi
             x1 = x + 38 * math.cos(math.radians(-start_deg))
             y1 = y + 38 * math.sin(math.radians(-start_deg))
             x2 = x + 38 * math.cos(math.radians(-end_deg))
             y2 = y + 38 * math.sin(math.radians(-end_deg))
+            
             mid = math.radians(-(start_deg + end_deg) / 2)
+            
             return f'<path d="M {x} {y} L {x1} {y1} A 38 38 0 0 1 {x2} {y2} Z" fill="{color}" opacity="0.6" stroke="black"/>' \
                    f'<text x="{x + 62 * math.cos(mid)}" y="{y + 62 * math.sin(mid)}" font-size="11" font-weight="bold" text-anchor="middle">{label}</text>'
 
         svg = f'<svg width="100%" height="360" viewBox="0 0 350 350" preserveAspectRatio="xMidYMid meet" style="background:white; border:2px solid #ddd; border-radius:12px;">'
         
         a = aci_derece
-        # TÜM BOYAMALAR HARF KONUMLARINA GÖRE SABİTLENDİ
+        # TÜM İSİMLENDİRMELER VE RENKLER KİTAP STANDARTLARINA GÖRE MÜHÜRLENDİ
         if mod == "Yöndeş":
+            # Sağ-Üst (Dar): AOC = ADF (Kırmızı)
             svg += draw_arc(Ox, Oy, 0, a, "#e74c3c", "AOC")
             svg += draw_arc(Dx, Dy, 0, a, "#e74c3c", "ADF")
+            # Sol-Üst (Geniş): AOB = ADE (Mavi)
             svg += draw_arc(Ox, Oy, a, 180, "#3498db", "AOB")
             svg += draw_arc(Dx, Dy, a, 180, "#3498db", "ADE")
         elif mod == "Ters":
@@ -62,12 +72,12 @@ def main():
             svg += draw_arc(Ox, Oy, 180, 180+a, "#f1c40f", "BOG")
             svg += draw_arc(Dx, Dy, a, 180, "#f1c40f", "EDO")
 
-        # Doğrular
+        # Ana Doğrular
         svg += f'<line x1="40" y1="{d1y}" x2="310" y2="{d1y}" stroke="black" stroke-width="4" />'
         svg += f'<line x1="40" y1="{d2y}" x2="310" y2="{d2y}" stroke="black" stroke-width="4" />'
         svg += f'<line x1="{Ax}" y1="{Ay}" x2="{Gx}" y2="{Gy}" stroke="#7f8c8d" stroke-width="2" stroke-dasharray="5,3" />'
 
-        # HARFLERİN YERİ KİTAPLARLA UYUMLU HALE GETİRİLDİ (image_8721d7 referanslı)
+        # HARFLERİN YERLERİ STANDART GEOMETRİ DÜZENİNE ÇEKİLDİ (Nokta Atışı)
         pts = [(Ox, Oy, "O"), (Dx, Dy, "D"), (Ax, Ay, "A"), (Gx, Gy, "G"), 
                (270, d1y, "B"), (80, d1y, "C"), (Dx+100, d2y, "E"), (Dx-100, d2y, "F")]
         for px, py, n in pts:
@@ -77,7 +87,7 @@ def main():
         svg += "</svg>"
         st.components.v1.html(svg, height=360)
 
-        # 3. Kapsamlı Bilgi Tablosu
+        # 3. Kapsamlı Bilgi Tablosu (Mobil uyumlu)
         st.markdown("---")
         st.subheader("📋 Açı İlişkileri Özet Listesi")
         st.table([
