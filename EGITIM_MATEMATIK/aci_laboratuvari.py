@@ -1,103 +1,96 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Sayfa Genişliği ve Eğitimci Teması
-st.set_page_config(page_title="Hasan Bey Açı Laboratuvarı", layout="wide")
+# Sayfa Yapılandırması
+st.set_page_config(page_title="Hasan Bey Açı Akademisi", layout="wide")
 
 def main():
-    st.markdown("<h1 style='text-align: center; color: #2E86C1;'>📐 Geometride Açı İlişkileri</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 1.2rem;'>Paralel doğruların bir kesenle oluşturduğu dünyayı keşfedin.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1A5276;'>📐 İnteraktif Geometri Laboratuvarı</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Hasan Bey ile açıların dünyasını dokunarak keşfedin.</p>", unsafe_allow_html=True)
 
-    # Yan Panel - Eğitim Kontrolleri
-    st.sidebar.header("🛠️ Laboratuvar Masası")
-    angle_input = st.sidebar.slider("Kesen Doğruyu Hareket Ettir (°)", 25, 155, 60)
+    # Eğitim Paneli
+    st.sidebar.header("🕹️ Ders Paneli")
+    aci = st.sidebar.slider("Kesen Doğruyu Döndür (°)", 25, 155, 60)
     
-    st.sidebar.subheader("📖 Öğrenme Modu")
-    topic = st.sidebar.radio(
-        "Hangi Kavramı İnceleyelim?",
-        ["Keşif Modu", "Yöndeş Açılar", "İç Ters Açılar", "Dış Ters Açılar", "U Kuralı (Karşı Durumlu)"]
+    st.sidebar.subheader("🎯 Öğrenilecek Kavram")
+    konu = st.sidebar.radio(
+        "Kural Seçin:",
+        ["Tanışma Modu", "Yöndeş Açılar", "İç Ters Açılar", "Dış Ters Açılar", "U Kuralı"]
     )
 
-    # HTML5 Canvas + p5.js (Modern Web Teknolojisi)
-    html_content = f"""
-    <div id="canvas-container" style="display: flex; justify-content: center; padding: 20px; background: #ffffff;"></div>
+    # HTML5 & p5.js ile Yüksek Kaliteli Çizim
+    html_code = f"""
+    <div id="laboratuvar" style="display: flex; justify-content: center; background: #fff; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script>
-    let angle = {angle_input};
-    let mode = "{topic}";
+    let aVal = {aci};
+    let mode = "{konu}";
 
     function setup() {{
-        let canvas = createCanvas(850, 550);
-        canvas.parent('canvas-container');
+        let canvas = createCanvas(800, 500);
+        canvas.parent('laboratuvar');
         textAlign(CENTER, CENTER);
-        textFont('Arial');
+        textFont('Trebuchet MS');
     }}
 
     function draw() {{
         background(255);
-        let rad = radians(angle);
-        let slope = tan(rad);
+        let r = radians(aVal);
+        let s = tan(r);
         
-        // --- 1. Temel Yapı: Paralel Doğrular ---
-        stroke(0); strokeWeight(5);
-        line(150, 180, 700, 180); // Üst Doğru (d1)
-        line(150, 380, 700, 380); // Alt Doğru (d2)
+        // --- 1. Paralel Doğrular (Kalın ve Net) ---
+        stroke(44, 62, 80); strokeWeight(5);
+        line(150, 180, 650, 180); // d1
+        line(150, 380, 650, 380); // d2
         
-        // Etiketler
-        noStroke(); fill(50); textSize(20); textStyle(BOLD);
-        text("d1", 120, 180); text("d2", 120, 380);
-        
-        // --- 2. Kesen Doğru ---
-        let xOff = 200 / slope;
-        stroke(120, 120, 120, 180); strokeWeight(3);
-        line(425 + xOff*1.6, 50, 425 - xOff*1.6, 500);
-        
-        // --- 3. Kavratma Mantığı (Açı Çizimleri) ---
-        let colors = {{
-            yondesh: color(231, 76, 60, 200), // Canlı Kırmızı
-            icTers: color(46, 204, 113, 200),  // Yeşil
-            disTers: color(52, 152, 219, 200), // Mavi
-            standard: color(200, 200, 200, 80) // Soft Gri
-        }};
+        // Etiketler (Kitaptaki düzene uygun)
+        noStroke(); fill(44, 62, 80); textSize(22); textStyle(BOLD);
+        text("C", 120, 180); text("B", 680, 180);
+        text("F", 120, 380); text("E", 680, 380);
+        text("O", 415, 160); text("D", 385, 405);
 
-        // Açı koordinatları (Üst: O(425, 180), Alt: D(425, 380))
+        // --- 2. Kesen Doğru (A-G) ---
+        let xOff = 200 / s;
+        stroke(127, 140, 141, 150); strokeWeight(3);
+        line(400 + xOff*1.6, 50, 400 - xOff*1.6, 450);
+        noStroke(); fill(127, 140, 141); text("A", 400 + xOff*1.7, 30); text("G", 400 - xOff*1.7, 470);
+
+        // --- 3. Kavratıcı Açı Çizimleri ---
+        let cY = color(231, 76, 60, 220); // Yöndeş (Kırmızı)
+        let cI = color(46, 204, 113, 220); // İç Ters (Yeşil)
+        let cD = color(52, 152, 219, 220); // Dış Ters (Mavi)
+        let cG = color(200, 200, 200, 100); // Standart (Gri)
+
         if(mode == "Yöndeş Açılar") {{
-            drawLabeledAngle(425, 180, 0, -rad, colors.yondesh, "AOC");
-            drawLabeledAngle(425, 380, 0, -rad, colors.yondesh, "ADF");
-        }} 
-        else if(mode == "İç Ters Açılar") {{
-            drawLabeledAngle(425, 180, PI, PI-rad, colors.icTers, "COG");
-            drawLabeledAngle(425, 380, 0, -rad, colors.icTers, "ADE");
-        }}
-        else if(mode == "Dış Ters Açılar") {{
-            drawLabeledAngle(425, 180, 0, -rad, colors.disTers, "AOC");
-            drawLabeledAngle(425, 380, PI, PI-rad, colors.disTers, "GDE");
-        }}
-        else {{
-            // Tüm açıları gri göster
-            drawLabeledAngle(425, 180, 0, -rad, colors.standard, angle + "°");
-            drawLabeledAngle(425, 380, 0, -rad, colors.standard, angle + "°");
+            drawAngle(400, 180, 0, -r, cY, "AOC");
+            drawAngle(400, 380, 0, -r, cY, "ADF");
+        }} else if(mode == "İç Ters Açılar") {{
+            drawAngle(400, 180, PI, PI-r, cI, "COG");
+            drawAngle(400, 380, 0, -r, cI, "ADE");
+        }} else {{
+            drawAngle(400, 180, 0, -r, cG, aVal + "°");
+            drawAngle(400, 380, 0, -r, cG, aVal + "°");
         }}
     }}
 
-    function drawLabeledAngle(x, y, start, end, col, txt) {{
-        push();
-        noStroke(); fill(col);
-        arc(x, y, 90, 90, end, start);
-        let mid = (start + end) / 2;
+    function drawAngle(x, y, st, en, col, lbl) {{
+        push(); noStroke(); fill(col);
+        arc(x, y, 100, 100, en, st);
+        let m = (st + en) / 2;
         fill(0); textSize(16); textStyle(BOLD);
-        text(txt, x + 75 * cos(mid), y + 75 * sin(mid));
+        text(lbl, x + 85 * cos(m), y + 85 * sin(m));
         pop();
     }}
     </script>
     """
 
-    # HTML'i Streamlit'e Gönder
-    components.html(html_content, height=600)
+    components.html(html_code, height=550)
 
-    # Bilgi Kutusu - Dinamik İçerik (image_83ef24.png'ye göre uyarlandı)
-    st.markdown("---")
-    if topic == "Yöndeş Açılar":
-        st.info("📌 **Bilgi Kutusu:** Aynı yöne bakan açılara **yöndeş açılar** denir. Üstteki ve alttaki paralel doğrular üzerinde aynı 'köşede' dururlar.")
-    elif topic == "İç Ters Açılar":
-        st.success("📌 **Bilgi Kutusu:** Paralel doğrular arasında kalan ve kesenin ters yönlerine bakan açılardır. Ölçüleri eşittir.")
+    # Bilgi Kutusu (Ders Kitabı Formatında)
+    if konu != "Tanışma Modu":
+        st.markdown(f"### 💡 Hasan Hoca'dan Bilgi Kutusu")
+        if konu == "Yöndeş Açılar":
+            st.info("Aynı yöne bakan açılar eşittir. Ekranda **AOC** ve **ADF** açılarının nasıl aynı 'köşede' oturduğunu fark ettiniz mi?")
+
+if __name__ == "__main__":
+    main()
