@@ -1,25 +1,25 @@
 import streamlit as st
 import math
 
-# Sayfa Yapılandırması - Sabit ve Güvenli
+# Sayfa Yapılandırması
 st.set_page_config(page_title="Hasan Bey Geometri Akademisi", layout="centered")
 
 def main():
     try:
         st.markdown("<h1 style='text-align: center; color: #1A5276; font-size: 1.5rem;'>📐 Tam Uyumlu Açı Laboratuvarı</h1>", unsafe_allow_html=True)
 
-        # 1. Eğitim ve Test Paneli
+        # 1. Yan Panel - Kontrol ve Test
         with st.sidebar:
-            st.header("🛠️ Kontrol Merkezi")
+            st.header("🛠️ Eğitim Paneli")
             aci_derece = st.slider("Kesen Açısını Ayarla (°)", 30, 150, 70)
             mod = st.selectbox("İncelemek İstediğiniz Kural:", 
                              ["Yöndeş", "Ters", "İç Ters (Z)", "Dış Ters", "U Kuralı"])
             st.markdown("---")
             st.subheader("✍️ Öğrenci Testi")
             ogrenci_input = st.text_area("Cevabınız (Örn: AOC=ADF):").strip().upper().replace(" ", "")
-            check_btn = st.button("Kontrol Et")
+            check_btn = st.button("Doğruluğu Kontrol Et")
 
-        # 2. Matematiksel Motor (Kesin Geometrik Standart)
+        # 2. Matematiksel Motor (Harf ve Açı Kalibrasyonu)
         rad = math.radians(aci_derece)
         s_inv = 1 / math.tan(rad)
         cx = 175 
@@ -30,9 +30,8 @@ def main():
         Ax, Ay = Ox + 85*s_inv, Oy - 85
         Gx, Gy = Dx - 85*s_inv, Dy + 85
 
-        # BOYAMA FONKSİYONU - %100 GEOMETRİK DOĞRULUK
         def draw_arc(x, y, start_deg, end_deg, color, label):
-            # Trigonometrik yönler SVG koordinatlarına (y aşağı pozitif) göre sabitlendi
+            # Trigonometrik yönler SVG standartlarına göre (y aşağı) sabitlendi
             x1 = x + 38 * math.cos(math.radians(-start_deg))
             y1 = y + 38 * math.sin(math.radians(-start_deg))
             x2 = x + 38 * math.cos(math.radians(-end_deg))
@@ -44,12 +43,10 @@ def main():
         svg = f'<svg width="100%" height="360" viewBox="0 0 350 350" preserveAspectRatio="xMidYMid meet" style="background:white; border:2px solid #ddd; border-radius:12px;">'
         
         a = aci_derece
-        # TÜM İSİMLENDİRMELER KİTAP STANDARTLARINA GÖRE SABİTLENDİ
+        # TÜM BOYAMALAR HARF KONUMLARINA GÖRE SABİTLENDİ
         if mod == "Yöndeş":
-            # Sağ-Üst: AOC (Dar Açı)
             svg += draw_arc(Ox, Oy, 0, a, "#e74c3c", "AOC")
             svg += draw_arc(Dx, Dy, 0, a, "#e74c3c", "ADF")
-            # Sol-Üst: AOB (Geniş Açı)
             svg += draw_arc(Ox, Oy, a, 180, "#3498db", "AOB")
             svg += draw_arc(Dx, Dy, a, 180, "#3498db", "ADE")
         elif mod == "Ters":
@@ -65,29 +62,29 @@ def main():
             svg += draw_arc(Ox, Oy, 180, 180+a, "#f1c40f", "BOG")
             svg += draw_arc(Dx, Dy, a, 180, "#f1c40f", "EDO")
 
-        # Çizgiler ve Sabit Noktalar
+        # Doğrular
         svg += f'<line x1="40" y1="{d1y}" x2="310" y2="{d1y}" stroke="black" stroke-width="4" />'
         svg += f'<line x1="40" y1="{d2y}" x2="310" y2="{d2y}" stroke="black" stroke-width="4" />'
         svg += f'<line x1="{Ax}" y1="{Ay}" x2="{Gx}" y2="{Gy}" stroke="#7f8c8d" stroke-width="2" stroke-dasharray="5,3" />'
 
+        # HARFLERİN YERİ KİTAPLARLA UYUMLU HALE GETİRİLDİ (image_8721d7 referanslı)
         pts = [(Ox, Oy, "O"), (Dx, Dy, "D"), (Ax, Ay, "A"), (Gx, Gy, "G"), 
-               (80, d1y, "C"), (270, d1y, "B"), (Dx+100, d2y, "E"), (Dx-100, d2y, "F")]
+               (270, d1y, "B"), (80, d1y, "C"), (Dx+100, d2y, "E"), (Dx-100, d2y, "F")]
         for px, py, n in pts:
             svg += f'<circle cx="{px}" cy="{py}" r="4" fill="black" />'
-            svg += f'<text x="{px+10}" y="{py-10}" font-weight="bold" font-size="12">{n}</text>'
+            svg += f'<text x="{px+12}" y="{py-10}" font-weight="bold" font-size="12">{n}</text>'
         
         svg += "</svg>"
         st.components.v1.html(svg, height=360)
 
-        # 3. Kapsamlı Açı Tablosu (Sürekli Görünür)
+        # 3. Kapsamlı Bilgi Tablosu
         st.markdown("---")
-        st.subheader("📋 Tüm Açı İlişkileri Listesi")
+        st.subheader("📋 Açı İlişkileri Özet Listesi")
         st.table([
-            {"Grup": "Yöndeş", "Eşitlik": "AOC = ADF (Dar), AOB = ADE (Geniş)", "Kural": "Aynı Yön"},
-            {"Grup": "Ters", "Eşitlik": "AOC = BOG, AOB = COG", "Kural": "Zıt Yön"},
-            {"Grup": "İç Ters (Z)", "Eşitlik": "BOG = ADF", "Kural": "Paralel İçi"},
-            {"Grup": "Dış Ters", "Eşitlik": "AOC = GDE", "Kural": "Paralel Dışı"},
-            {"Grup": "U Kuralı", "Eşitlik": "BOG + EDO = 180°", "Kural": "Bütünler"}
+            {"Grup": "Yöndeş", "Eşitlik": "AOC = ADF, AOB = ADE", "Durum": "Eşit"},
+            {"Grup": "Ters", "Eşitlik": "AOC = BOG, AOB = COG", "Durum": "Eşit"},
+            {"Grup": "İç Ters (Z)", "Eşitlik": "BOG = ADF", "Durum": "Eşit"},
+            {"Grup": "U Kuralı", "Eşitlik": "BOG + EDO = 180°", "Durum": "Bütünler"}
         ])
 
     except Exception as e:
