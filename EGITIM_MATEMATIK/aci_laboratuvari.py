@@ -1,79 +1,103 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import numpy as np
+import streamlit.components.v1 as components
 
-# Sayfa yapılandırması
-st.set_page_config(page_title="Hasan Hoca Açı Laboratuvarı", layout="wide")
+# Sayfa Genişliği ve Eğitimci Teması
+st.set_page_config(page_title="Hasan Bey Açı Laboratuvarı", layout="wide")
 
 def main():
-    st.title("📐 Hasan Bey ile Açıları Keşfet")
-    st.markdown("---")
+    st.markdown("<h1 style='text-align: center; color: #2E86C1;'>📐 Geometride Açı İlişkileri</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 1.2rem;'>Paralel doğruların bir kesenle oluşturduğu dünyayı keşfedin.</p>", unsafe_allow_html=True)
 
-    # Sol panel: Kontroller
-    st.sidebar.header("🕹️ Kontrol Paneli")
-    angle_val = st.sidebar.slider("Kesen Açısını Ayarla (°)", 10, 170, 72)
+    # Yan Panel - Eğitim Kontrolleri
+    st.sidebar.header("🛠️ Laboratuvar Masası")
+    angle_input = st.sidebar.slider("Kesen Doğruyu Hareket Ettir (°)", 25, 155, 60)
     
-    st.sidebar.subheader("🎯 Neyi Görmek İstersin?")
-    mode = st.sidebar.radio(
-        "Açı Türünü Seçin:",
-        ["Hepsini Göster", "Yöndeş Açılar", "Ters Açılar", "İç Ters (Z Kuralı)", "Dış Ters Açılar"]
+    st.sidebar.subheader("📖 Öğrenme Modu")
+    topic = st.sidebar.radio(
+        "Hangi Kavramı İnceleyelim?",
+        ["Keşif Modu", "Yöndeş Açılar", "İç Ters Açılar", "Dış Ters Açılar", "U Kuralı (Karşı Durumlu)"]
     )
 
-    # Matematiksel Hesaplamalar
-    komsu_aci = 180 - angle_val
-    
-    # Çizim Ekranı
-    fig, ax = plt.subplots(figsize=(12, 8))
-    x = np.linspace(-10, 10, 100)
-    
-    # Paralel Doğrular (K-N ve P-T)
-    ax.plot(x, np.zeros_like(x) + 3, color='black', lw=2) # Üst
-    ax.plot(x, np.zeros_like(x) - 3, color='black', lw=2) # Alt
-    
-    # Kesen Doğru (M-S)
-    rad = np.radians(angle_val)
-    slope = np.tan(rad)
-    ax.plot(x, slope * x, color='gray', ls='--', alpha=0.5)
+    # HTML5 Canvas + p5.js (Modern Web Teknolojisi)
+    html_content = f"""
+    <div id="canvas-container" style="display: flex; justify-content: center; padding: 20px; background: #ffffff;"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script>
+    let angle = {angle_input};
+    let mode = "{topic}";
 
-    # Açıları ve Renkleri Belirleme
-    def draw_angle_text(x_pos, y_pos, label, val, color='black', weight='normal', size=12):
-        ax.text(x_pos, y_pos, f"{label}\n{val}°", fontsize=size, color=color, 
-                fontweight=weight, ha='center', bbox=dict(facecolor='white', alpha=0.6, edgecolor='none'))
+    function setup() {{
+        let canvas = createCanvas(850, 550);
+        canvas.parent('canvas-container');
+        textAlign(CENTER, CENTER);
+        textFont('Arial');
+    }}
 
-    # Üst Kesişim Noktası L (0, 3) | Alt Kesişim Noktası R (0, -3) için ofsetler
-    # Modlara göre renk ve vurgu belirleme
-    yondesh_color = "red" if mode == "Yöndeş Açılar" else "black"
-    ters_color = "blue" if mode == "Ters Açılar" else "black"
-    ic_ters_color = "green" if mode == "İç Ters (Z Kuralı)" else "black"
+    function draw() {{
+        background(255);
+        let rad = radians(angle);
+        let slope = tan(rad);
+        
+        // --- 1. Temel Yapı: Paralel Doğrular ---
+        stroke(0); strokeWeight(5);
+        line(150, 180, 700, 180); // Üst Doğru (d1)
+        line(150, 380, 700, 380); // Alt Doğru (d2)
+        
+        // Etiketler
+        noStroke(); fill(50); textSize(20); textStyle(BOLD);
+        text("d1", 120, 180); text("d2", 120, 380);
+        
+        // --- 2. Kesen Doğru ---
+        let xOff = 200 / slope;
+        stroke(120, 120, 120, 180); strokeWeight(3);
+        line(425 + xOff*1.6, 50, 425 - xOff*1.6, 500);
+        
+        // --- 3. Kavratma Mantığı (Açı Çizimleri) ---
+        let colors = {{
+            yondesh: color(231, 76, 60, 200), // Canlı Kırmızı
+            icTers: color(46, 204, 113, 200),  // Yeşil
+            disTers: color(52, 152, 219, 200), // Mavi
+            standard: color(200, 200, 200, 80) // Soft Gri
+        }};
 
-    # Açı Yerleşimleri (Görseldeki K, L, M, N, P, R, S, T harf düzenine uygun)
-    # Üst Bölge
-    draw_angle_text(-1, 3.5, "K-L-M", angle_val, 
-                    color=yondesh_color if mode == "Yöndeş Açılar" else ters_color if mode == "Ters Açılar" else "black",
-                    weight='bold' if mode in ["Yöndeş Açılar", "Ters Açılar"] else 'normal')
-    
-    draw_angle_text(1, 3.5, "M-L-N", komsu_aci)
+        // Açı koordinatları (Üst: O(425, 180), Alt: D(425, 380))
+        if(mode == "Yöndeş Açılar") {{
+            drawLabeledAngle(425, 180, 0, -rad, colors.yondesh, "AOC");
+            drawLabeledAngle(425, 380, 0, -rad, colors.yondesh, "ADF");
+        }} 
+        else if(mode == "İç Ters Açılar") {{
+            drawLabeledAngle(425, 180, PI, PI-rad, colors.icTers, "COG");
+            drawLabeledAngle(425, 380, 0, -rad, colors.icTers, "ADE");
+        }}
+        else if(mode == "Dış Ters Açılar") {{
+            drawLabeledAngle(425, 180, 0, -rad, colors.disTers, "AOC");
+            drawLabeledAngle(425, 380, PI, PI-rad, colors.disTers, "GDE");
+        }}
+        else {{
+            // Tüm açıları gri göster
+            drawLabeledAngle(425, 180, 0, -rad, colors.standard, angle + "°");
+            drawLabeledAngle(425, 380, 0, -rad, colors.standard, angle + "°");
+        }}
+    }}
 
-    # Alt Bölge
-    draw_angle_text(-1, -2.5, "P-R-L", komsu_aci)
-    
-    draw_angle_text(1, -2.5, "L-R-T", angle_val, 
-                    color=yondesh_color if mode == "Yöndeş Açılar" else ic_ters_color if mode == "İç Ters (Z Kuralı)" else "black",
-                    weight='bold' if mode in ["Yöndeş Açılar", "İç Ters (Z Kuralı)"] else 'normal')
+    function drawLabeledAngle(x, y, start, end, col, txt) {{
+        push();
+        noStroke(); fill(col);
+        arc(x, y, 90, 90, end, start);
+        let mid = (start + end) / 2;
+        fill(0); textSize(16); textStyle(BOLD);
+        text(txt, x + 75 * cos(mid), y + 75 * sin(mid));
+        pop();
+    }}
+    </script>
+    """
 
-    # Grafik Ayarları
-    ax.set_ylim(-6, 6)
-    ax.set_xlim(-6, 6)
-    ax.axis('off') # Eksenleri gizle, sadece çizim kalsın
-    
-    st.pyplot(fig)
+    # HTML'i Streamlit'e Gönder
+    components.html(html_content, height=600)
 
-    # Dinamik Açıklama Metni
-    st.info(f"💡 **Şu an incelenen:** {mode}")
-    if mode == "Yöndeş Açılar":
-        st.write("Aynı yöne bakan açılar eşittir. Kırmızı ile vurgulanan açılara dikkat edin!")
-    elif mode == "Ters Açılar":
-        st.write("Aynı noktada sırt sırta veren açılar eşittir.")
-
-if __name__ == "__main__":
-    main()
+    # Bilgi Kutusu - Dinamik İçerik (image_83ef24.png'ye göre uyarlandı)
+    st.markdown("---")
+    if topic == "Yöndeş Açılar":
+        st.info("📌 **Bilgi Kutusu:** Aynı yöne bakan açılara **yöndeş açılar** denir. Üstteki ve alttaki paralel doğrular üzerinde aynı 'köşede' dururlar.")
+    elif topic == "İç Ters Açılar":
+        st.success("📌 **Bilgi Kutusu:** Paralel doğrular arasında kalan ve kesenin ters yönlerine bakan açılardır. Ölçüleri eşittir.")
