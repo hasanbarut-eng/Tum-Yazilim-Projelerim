@@ -2,7 +2,7 @@ import streamlit as st
 import math
 
 # Sayfa Yapılandırması
-st.set_page_config(page_title="Hasan Bey Geometri Akademisi", layout="centered")
+st.set_page_config(page_title="Hasan Bey Geometri Laboratuvarı", layout="centered")
 
 def main():
     try:
@@ -16,7 +16,6 @@ def main():
                              ["Yöndeş", "Ters", "İç Ters (Z)", "Dış Ters", "U Kuralı"])
             st.markdown("---")
             st.subheader("✍️ Öğrenci Yanıtı")
-            st.info(f"Soru: **{mod}** olan tüm açı çiftlerini yazınız.")
             ogrenci_input = st.text_area("Cevabınız:").strip().upper().replace(" ", "")
             check_btn = st.button("Doğruluğu Kontrol Et")
 
@@ -31,16 +30,19 @@ def main():
         Ax, Ay = Ox + 85*s_inv, Oy - 85
         Gx, Gy = Dx - 85*s_inv, Dy + 85
 
-        # BOYAMA FONKSİYONU - MAVİ VE DİĞER RENKLER İÇİN KALİBRE EDİLDİ
+        # BOYAMA FONKSİYONU - HARFLERLE TAM ÖRTÜŞECEK ŞEKİLDE KALİBRE EDİLDİ
         def draw_arc(x, y, start_deg, end_deg, color, label):
-            # Koordinat sistemi yönleri netleştirildi
+            # Harf etiketini dilimin tam ortasına yerleştirmek için 'mid' açısını hesapla
+            mid = math.radians(-(start_deg + end_deg) / 2)
+            
+            # SVG yay (arc) çizimi için koordinatlar
             x1 = x + 38 * math.cos(math.radians(-start_deg))
             y1 = y + 38 * math.sin(math.radians(-start_deg))
             x2 = x + 38 * math.cos(math.radians(-end_deg))
             y2 = y + 38 * math.sin(math.radians(-end_deg))
-            mid = math.radians(-(start_deg + end_deg) / 2)
+            
             return f'<path d="M {x} {y} L {x1} {y1} A 38 38 0 0 1 {x2} {y2} Z" fill="{color}" opacity="0.6" stroke="black"/>' \
-                   f'<text x="{x + 58 * math.cos(mid)}" y="{y + 58 * math.sin(mid)}" font-size="10" font-weight="bold" text-anchor="middle">{label}</text>'
+                   f'<text x="{x + 60 * math.cos(mid)}" y="{y + 60 * math.sin(mid)}" font-size="11" font-weight="bold" text-anchor="middle">{label}</text>'
 
         svg = f'<svg width="100%" height="360" viewBox="0 0 350 350" preserveAspectRatio="xMidYMid meet" style="background:white; border:1px solid #ddd; border-radius:12px;">'
         
@@ -48,8 +50,8 @@ def main():
         if mod == "Yöndeş":
             svg += draw_arc(Ox, Oy, 0, a, "#e74c3c", "AOC")
             svg += draw_arc(Dx, Dy, 0, a, "#e74c3c", "ADF")
-            svg += draw_arc(Ox, Oy, a, 180, "#3498db", "AOB") # MAVİ RENK BURADA
-            svg += draw_arc(Dx, Dy, a, 180, "#3498db", "ADE") # MAVİ RENK BURADA
+            svg += draw_arc(Ox, Oy, a, 180, "#3498db", "AOB")
+            svg += draw_arc(Dx, Dy, a, 180, "#3498db", "ADE")
         elif mod == "Ters":
             svg += draw_arc(Ox, Oy, 0, a, "#f39c12", "AOC")
             svg += draw_arc(Ox, Oy, 180, 180+a, "#f39c12", "BOG")
@@ -77,19 +79,19 @@ def main():
         svg += "</svg>"
         st.components.v1.html(svg, height=360)
 
-        # 3. İstenen Liste ve Tablo (Sayfanın En Altında)
+        # 3. Açı İlişkileri Listesi (Tablo)
         st.markdown("---")
         st.subheader("📋 Tüm Açı İlişkileri Listesi")
         st.table([
             {"Grup": "Yöndeş", "Eşitlik": "AOC = ADF (Kırmızı), AOB = ADE (Mavi)", "Kural": "Aynı Yön"},
-            {"Grup": "Ters", "Eşitlik": "AOC = BOG, AOB = COG", "Kural": "Sırt Sırta"},
-            {"Grup": "İç Ters (Z)", "Eşitlik": "BOG = ADF, COG = ADE", "Kural": "Paralel İçi"},
-            {"Grup": "Dış Ters", "Eşitlik": "AOC = GDE, AOB = FDG", "Kural": "Paralel Dışı"},
+            {"Grup": "Ters", "Eşitlik": "AOC = BOG, AOB = COG", "Kural": "Zıt Yön"},
+            {"Grup": "İç Ters (Z)", "Eşitlik": "BOG = ADF", "Kural": "Paralel İçi"},
+            {"Grup": "Dış Ters", "Eşitlik": "AOC = GDE", "Kural": "Paralel Dışı"},
             {"Grup": "U Kuralı", "Eşitlik": "BOG + EDO = 180°", "Kural": "Bütünler"}
         ])
 
     except Exception as e:
-        st.error(f"Demirleme hatası: {e}")
+        st.error(f"Sistem hatası: {e}")
 
 if __name__ == "__main__":
     main()
