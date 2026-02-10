@@ -1,44 +1,44 @@
-"""
-PROJE: Finans Motoru V3 - Bildirim Servisi (Full Detaylı)
-"""
 import requests
 import datetime
 
 class BildirimServisi:
     def __init__(self, instance_id, token, telefon):
-        self.instance_id = instance_id
-        self.token = token
-        self.telefon = telefon
+        self.instance_id, self.token, self.telefon = instance_id, token, telefon
         self.url = f"https://api.ultramsg.com/{self.instance_id}/messages/chat"
 
-    def rapor_hazirla(self, firsatlar):
+    def rapor_hazirla(self, firsatlar, toplam_taranan):
         tarih = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-        mesaj = f"🚀 *STRATEJİK ANALİZ RAPORU (V3.1)* 🚀\n📅 {tarih}\n"
+        mesaj = f"🧠 *FİNANS MOTORU V8.0 ZİRVE* 🧠\n📅 {tarih}\n"
         mesaj += "------------------------------------------\n\n"
         
         if not firsatlar:
-            mesaj += "💤 Bugün kriterlere uygun fırsat bulunamadı."
+            mesaj += "💤 Şu an kriterlere uygun fırsat bulunamadı."
         else:
-            # Puanı en yüksek olan ilk 5 fırsatı gönder (Hacim öncelikli)
-            firsatlar.sort(key=lambda x: x['puan'], reverse=True)
-            for f in firsatlar[:5]:
-                mesaj += f"📌 *Hisse:* ${f['sembol']}\n"
-                mesaj += f"📊 *Puan:* {f['puan']}/100 | *Hacim:* {f['hacim_onayi']}\n"
-                mesaj += f"⏳ *Vade:* KISA/ORTA (AL-SAT)\n"
-                mesaj += f"💰 *Güncel Fiyat:* {f['fiyat']} TL\n"
-                mesaj += f"🛡️ *Stop-Loss:* {f['stop_loss']} TL\n"
-                mesaj += f"🎯 *Hedef:* {f['hedef']} TL\n"
-                mesaj += f"📈 *Potansiyel:* %15\n"
+            # Puanı 20'den büyük her şeyi listele (Baraj esnetildi)
+            firsatlar = [f for f in firsatlar if f['ai_puan'] >= 20]
+            firsatlar.sort(key=lambda x: x['ai_puan'], reverse=True)
+            
+            for f in firsatlar[:15]: # En iyi 15 fırsat
+                # SINIFLANDIRMA
+                if f['ai_puan'] >= 80: durum = "🚀 ÇOK GÜÇLÜ"
+                elif f['ai_puan'] >= 20: durum = "🔥 GÜÇLÜ"
+                elif f['ai_puan'] >= 0: durum = "✅ İYİ"
+                else: durum = "⚠️ ORTA"
+
+                mesaj += f"💎 *Hisse:* ${f['sembol']} | {durum}\n"
+                mesaj += f"📊 *AI Skor:* %{f['ai_puan']} | {f['bilanco']}\n"
+                mesaj += f"📐 *Fib. Destek:* {f['fib_destek']} TL\n"
+                mesaj += f"🎯 *Hedef:* {f['hedef']} TL (%{f['getiri']})\n"
+                mesaj += f"💵 *Fiyat:* {f['fiyat']} TL | 🛡️ *Stop:* {f['stop_loss']} TL\n"
+                mesaj += f"🔗 *Grafik:* {f['grafik_link']}\n"
                 mesaj += "------------------------------------------\n"
         
-        mesaj += "\n💡 _Senior Developer Production Code_"
+        mesaj += "\n💡 _Senior Developer: Tüm İndikatörler ve Puanlama Dahildir._"
         return mesaj
 
     def mesaj_gonder(self, metin):
-        payload = f"token={self.token}&to={self.telefon}&body={metin}".encode('utf-8')
-        headers = {'content-type': 'application/x-www-form-urlencoded'}
+        payload = {"token": self.token, "to": self.telefon, "body": metin}
         try:
-            requests.post(self.url, data=payload, headers=headers)
-            print("[BİLDİRİM] Rapor başarıyla WhatsApp'a iletildi.")
-        except Exception as e:
-            print(f"[HATA] Bildirim gönderilemedi: {e}")
+            requests.post(self.url, data=payload, timeout=25)
+            return True
+        except: return False

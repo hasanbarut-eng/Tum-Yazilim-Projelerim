@@ -1,42 +1,22 @@
-"""
-PROJE: Finans Motoru V3 - Borsa Analiz Robotu
-GELİŞTİRİCİ: Senior Developer
-TİTİZLİK SEVİYESİ: Matematik Öğretmeni (Hata Payı Sıfır)
-AÇIKLAMA: API bilgileri, kriterler, ağırlıklar ve BIST sembol listesini içerir.
-"""
+# --- WHATSAPP YAPILANDIRMASI ---
+WHATSAPP = {
+    "INSTANCE_ID": "instance161474",
+    "TOKEN": "phuru66rxhdjhxgr",
+    "TELEFON": "+905372657886"
+}
 
-import os
-
-# --- API VE KİMLİK BİLGİLERİ ---
-INSTANCE_ID = "instance161474"
-TOKEN = "phuru66rxhdjhxgr"
-TELEFON = "+905372657886"
-
-# --- DİZİN YAPILANDIRMASI ---
-# Dizin yoksa otomatik oluşturma mantığı ana_kontrol.py içinde yönetilecektir.
-LOG_DIZINI = r"C:\Yazilim_Projelerim\BORSA_ROBOTU_V3\logs"
-
-# --- ANALİZ KRİTERLERİ (MATEMATİKSEL EŞİKLER) ---
+# --- ANALİZ KRİTERLERİ ---
 KRITERLER = {
     "RSI_ALT_ESIK": 35,
     "RSI_UST_ESIK": 70,
-    "MIN_MA_GUN": 200,      # Hareketli Ortalama (Moving Average) Gün Sayısı
-    "PUAN_ESIGI": 65,      # Analizden geçme notu
-    "TARAMA_ARALIGI": 1800, # Saniye (30 Dakika)
-    "STOP_KAYIP_ORANI": 0.05,
-    "KAR_AL_ORANI": 0.15,
-    "MAKS_PORTFOY_ORANI": 0.10
+    "MIN_MA_GUN": 200,
+    "PUAN_ESIGI": 0,  # TEST İÇİN SIFIRA ÇEKTİK (Her şeyi görmeniz için)
+    "TARAMA_ARALIGI": 1800,
+    "STOP_KAYIP_ORANI": 0.05
 }
 
-# --- PUANLAMA AĞIRLIKLARI ---
-AGIRLIKLAR = {
-    "teknik": 0.40,      # Teknik analiz etkisi %40
-    "temel": 0.30,       # Temel analiz etkisi %30
-    "akilli_para": 0.30  # Hacim ve para girişi etkisi %30
-}
-
-# --- BIST SEMBOL LİSTESİ (500+) ---
-# Alfabetik sıralı ve temizlenmiş liste
+# --- BIST SEMBOL LİSTESİ ---
+# Hocam listeyi kısa tutuyorum, çalışırsa diğerlerini eklersiniz.
 HISSE_LISTESI = [
     "A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
     "AKBNK", "AKCNG", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 

@@ -1,26 +1,31 @@
-import time
+import finans_motoru
+import bildirim_servisi
 import ayarlar
-from finans_motoru import TeknikAnalizMotoru
-from bildirim_servisi import BildirimServisi
+import time
 
-def ana_merkez():
-    robot = TeknikAnalizMotoru()
-    servis = BildirimServisi(ayarlar.INSTANCE_ID, ayarlar.TOKEN, ayarlar.TELEFON)
+def baslat():
+    motor = finans_motoru.TeknikAnalizMotoru()
+    servis = bildirim_servisi.BildirimServisi(ayarlar.WHATSAPP["INSTANCE_ID"], 
+                                             ayarlar.WHATSAPP["TOKEN"], 
+                                             ayarlar.WHATSAPP["TELEFON"])
     
-    print(f"\n--- STRATEJİK TARAMA BAŞLADI ({len(ayarlar.HISSE_LISTESI)} HİSSE) ---")
     firsatlar = []
+    hisseler = ayarlar.HISSE_LISTESI
+    toplam = len(hisseler)
     
-    for sira, sembol in enumerate(ayarlar.HISSE_LISTESI, 1):
-        sonuc = robot.analiz_et(sembol)
-        if sonuc:
-            print(f"[{sira}/{len(ayarlar.HISSE_LISTESI)}] {sembol:8} | Puan: {sonuc['puan']:3} | {sonuc['durum']}")
-            if sonuc["durum"] == "UYGUN":
-                firsatlar.append(sonuc)
+    print(f"🚀 V8.0 ZİRVE TARAMA BAŞLADI ({toplam} HİSSE) 🚀")
     
-    # Raporu gönder
-    rapor = servis.rapor_hazirla(firsatlar, len(ayarlar.HISSE_LISTESI))
-    servis.mesaj_gonder(rapor)
-    print("\n[TAMAMLANDI] Sistem raporu iletti ve uyku moduna geçti.")
+    for i, sembol in enumerate(hisseler, 1):
+        # Ekranda hangi hissede olduğunu gösteren canlı takip
+        print(f"[{i}/{toplam}] Analiz ediliyor: {sembol}", end="\r") 
+        
+        sonuc = motor.analiz_et(sembol)
+        if sonuc and sonuc["ai_puan"] >= 20: # Baraj %20
+            firsatlar.append(sonuc)
+            
+    print("\n\n✅ Tarama bitti. Rapor WhatsApp'a gönderiliyor...")
+    mesaj = servis.rapor_hazirla(firsatlar, toplam)
+    servis.mesaj_gonder(mesaj)
 
 if __name__ == "__main__":
-    ana_merkez()
+    baslat()
