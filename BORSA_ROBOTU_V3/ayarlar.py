@@ -1,16 +1,16 @@
-# --- WHATSAPP YAPILANDIRMASI ---
-WHATSAPP = {
-    "INSTANCE_ID": "instance161474",
-    "TOKEN": "phuru66rxhdjhxgr",
-    "TELEFON": "+905372657886"
+# --- TELEGRAM YAPILANDIRMASI ---
+# Bu bilgileri BotFather ve UserInfoBot üzerinden alıp buraya yazın
+TELEGRAM = {
+    "TOKEN": "8255121421:AAG1biq7jrgLFAbWmzOFs6D4wsPzoDUjYeM", 
+    "CHAT_ID": "-1003728280766"
 }
 
-# --- ANALİZ KRİTERLERİ ---
+# --- ANALİZ KRİTERLERİ (Orijinal Değerleriniz) ---
 KRITERLER = {
     "RSI_ALT_ESIK": 35,
     "RSI_UST_ESIK": 70,
     "MIN_MA_GUN": 200,
-    "PUAN_ESIGI": 0,  # TEST İÇİN SIFIRA ÇEKTİK (Her şeyi görmeniz için)
+    "PUAN_ESIGI": 20,
     "TARAMA_ARALIGI": 1800,
     "STOP_KAYIP_ORANI": 0.05
 }
