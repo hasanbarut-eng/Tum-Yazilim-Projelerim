@@ -3,58 +3,49 @@ import datetime
 
 class BildirimServisi:
     def __init__(self, token, chat_id):
-        self.token = token
-        self.chat_id = chat_id
-        self.base_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
+        self.token, self.chat_id = token, chat_id
+        self.url = f"https://api.telegram.org/bot{self.token}/sendMessage"
 
-    def rapor_hazirla(self, firsatlar, toplam_taranan):
+    def rapor_gonder(self, analiz_listesi):
+        if not analiz_listesi: return
+
+        tarih = datetime.datetime.now().strftime("%d.%m.%Y")
+        mesaj = "🛡️ **BORSA ROBOTU V4.2 | ZİRVE ANALİZ RAPORU** 🛡️\n"
+        mesaj += f"📅 *Tarih:* {tarih}\n"
+        mesaj += "━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+        skorlar = []
+        firsatlar = []
+
+        for a in analiz_listesi:
+            skorlar.append(a['ai_skor'])
+            if a['puan_sayi'] >= 3: firsatlar.append(f"#{a['sembol']}")
+            
+            sinyal_emoji = "🟢" if a['puan_sayi'] >= 3 else "🟡"
+            tv_sembol = a['sembol'].replace(".IS", "")
+            grafik_link = f"https://tr.tradingview.com/chart/?symbol=BIST%3A{tv_sembol}"
+
+            mesaj += f"💎 **Hisse:** #{a['sembol']} | 🔥 {a['trend']}\n"
+            mesaj += f"📊 **AI Skor:** %{a['ai_skor']} | 🎯 **Hedef:** {a['hedef']} TL\n"
+            mesaj += f"💵 **Fiyat:** {a['fiyat']} TL | 🛡️ **Stop:** {a['stop']} TL\n"
+            mesaj += f"🚦 **Günlük Sinyal:** {sinyal_emoji} **{a['puan_str']} Puan**\n"
+            mesaj += f"🚀 **Günlük Zirve Tahmini:** {a['zirve_tahmin']} TL\n"
+            mesaj += f"📑 **PD/DD:** {a['pddd']} | 🏦 **Kar:** {a['net_kar']}\n"
+            mesaj += f"💸 **Para Akışı:** {'✅' if a['para_akisi']=='Giriş' else '❌'}\n"
+            mesaj += f"🔗 [Grafik İçin Tıklayın]({grafik_link})\n"
+            mesaj += "━━━━━━━━━━━━━━━━━━━━━\n"
+
+        # --- OTOMATİK YAPAY ZEKA YORUMU ---
+        if skorlar:
+            ort_skor = sum(skorlar) / len(skorlar)
+            firsat_metni = ", ".join(firsatlar) if firsatlar else "Stabil"
+            
+            mesaj += "\n🧠 **FİNANS MOTORU ÖZET YORUMU** 🧠\n"
+            mesaj += f"Hocam, bugün taranan {len(analiz_listesi)} iskontolu kağıtta ortalama AI Skoru %{round(ort_skor, 1)} olarak hesaplandı. "
+            mesaj += f"Özellikle {firsat_metni} kağıtlarında günlük puanlar zirvede. "
+            mesaj += "SMA20 üzerinde kalıcılık sağlayan iskontolu devlerde 'Zirve Tahminleri' direnç olarak izlenmelidir. Bol kazançlar!"
+
         try:
-            tarih = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-            mesaj = f"🧠 *FİNANS MOTORU V8.0 ZİRVE* 🧠\n📅 {tarih}\n"
-            mesaj += "------------------------------------------\n\n"
-            
-            if not firsatlar:
-                mesaj += "💤 Şu an kriterlere uygun fırsat bulunamadı."
-            else:
-                # Puanlamaya göre sırala
-                firsatlar.sort(key=lambda x: x['ai_puan'], reverse=True)
-                
-                for f in firsatlar[:15]: 
-                    # Vade ve Strateji Belirleme
-                    if f.get('rsi', 50) < 35:
-                        vade_str = "⏳ KISA VADELİ (1-5 Günlük Tepki)"
-                    else:
-                        vade_str = "📈 ORTA/UZUN VADELİ (Trend Takibi)"
-                    
-                    if f['ai_puan'] >= 80: durum = "🚀 ÇOK GÜÇLÜ"
-                    elif f['ai_puan'] >= 20: durum = "🔥 GÜÇLÜ"
-                    else: durum = "✅ İYİ"
-
-                    mesaj += f"💎 *Hisse:* #{f['sembol']} | {durum}\n"
-                    mesaj += f"⏱ *Strateji:* {vade_str}\n"
-                    mesaj += f"📊 *AI Skor:* %{f['ai_puan']} | {f['bilanco']}\n"
-                    mesaj += f"📐 *Fib. Destek:* {f['fiyat']} TL\n"
-                    mesaj += f"🎯 *Hedef:* {f['hedef']} TL (%{f['getiri']})\n"
-                    mesaj += f"💵 *Fiyat:* {f['fiyat']} TL | 🛡️ *Stop:* {f['stop_loss']} TL\n"
-                    mesaj += f"🔗 [Grafik İçin Tıklayın]({f['grafik_link']})\n"
-                    mesaj += "------------------------------------------\n"
-            
-            mesaj += f"\n📊 *İstatistik:* {toplam_taranan} hisse tarandı.\n"
-            mesaj += "💡 _Senior Developer: Vade Analizi ve Strateji Notları Dahildir._"
-            return mesaj
+            requests.post(self.url, data={"chat_id": self.chat_id, "text": mesaj, "parse_mode": "Markdown", "disable_web_page_preview": True})
         except Exception as e:
-            return f"Rapor hazırlama hatası: {str(e)}"
-
-    def mesaj_gonder(self, metin):
-        payload = {
-            "chat_id": self.chat_id, 
-            "text": metin, 
-            "parse_mode": "Markdown", 
-            "disable_web_page_preview": False
-        }
-        try:
-            response = requests.post(self.base_url, data=payload, timeout=25)
-            response.raise_for_status()
-            return True
-        except Exception:
-            return False
+            print(f"Hata: {e}")

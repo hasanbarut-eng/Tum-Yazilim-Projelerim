@@ -1,58 +1,58 @@
 import pandas as pd
+import numpy as np
 import pandas_ta as ta
-import yfinance as yf
-import logging
-import ayarlar
 
-class TeknikAnalizMotoru:
+class FinansMotoru:
     def __init__(self):
-        # 'w' modu sayesinde her çalışma başında log dosyasını temizler
-        logging.basicConfig(filename='robot_log.txt', filemode='w', level=logging.ERROR, 
-                            format='%(asctime)s - %(levelname)s - %(message)s')
+        self.hedef_katsayi = 1.347
+        self.stop_katsayi = 0.95
 
-    def analiz_et(self, sembol):
-        """0-100 arası lineer puanlama ve tüm teknik göstergeler."""
+    def analiz_et(self, sembol, veri, temel_veriler):
         try:
-            ticker_obj = yf.Ticker(f"{sembol}.IS")
-            df = ticker_obj.history(period="1y", interval="1d")
-            if df is None or len(df) < 50: return None
-            df.columns = [c.lower().strip() for c in df.columns]
+            if veri is None or len(veri) < 35: return None
 
-            # GÖSTERGELER
-            rsi = ta.rsi(df['close'], length=14).iloc[-1]
-            ma200 = ta.sma(df['close'], length=200).iloc[-1]
-            macd = ta.macd(df['close'])
-            macd_val = macd['MACD_12_26_9'].iloc[-1]
-            macd_sig = macd['MACDs_12_26_9'].iloc[-1]
-            hacim_ort = df['volume'].tail(20).mean()
-            guncel_hacim = df['volume'].iloc[-1]
-            son_fiyat = float(df['close'].iloc[-1])
+            # --- PD/DD < 1 FİLTRESİ (İSKONTO) ---
+            pddd = temel_veriler.get('priceToBook', 0)
+            if pddd is None or pddd >= 1: return None
 
-            # FIBONACCI
-            zirve, dip = float(df['high'].max()), float(df['low'].min())
-            fib_618 = round(zirve - ((zirve - dip) * 0.618), 2)
-
-            # 0-100 PUANLAMA (Power Artırıcılar)
+            kapanis = veri['Close'].iloc[-1]
+            
+            # --- V8 ZİRVE PUANLAMA (0-4 Puan) ---
             puan = 0
-            if 30 <= rsi <= 60: puan += max(0, 40 - (rsi - 30)) # RSI: 40 Puan
-            if son_fiyat > ma200: puan += 15 # MA200: 15 Puan
-            if macd_val > macd_sig: puan += 15 # MACD: 15 Puan
-            if guncel_hacim > hacim_ort: puan += 15 # Hacim: 15 Puan
-            if son_fiyat <= fib_618 * 1.10: puan += 15 # Fib: 15 Puan
+            rsi = ta.rsi(veri['Close'], length=14).iloc[-1]
+            macd_data = ta.macd(veri['Close'])
+            sma20 = ta.sma(veri['Close'], length=20).iloc[-1]
+            
+            if macd_data['MACD_12_26_9'].iloc[-1] > macd_data['MACDs_12_26_9'].iloc[-1]: puan += 1
+            if kapanis > sma20: puan += 1
+            if rsi > 50: puan += 1
+            if rsi < 75: puan += 1
 
-            # BILANÇO & HEDEF
-            info = ticker_obj.info
-            fk = info.get('forwardPE', info.get('trailingPE', 0))
-            potansiyel = round(((zirve - son_fiyat) / son_fiyat) * 100, 1)
+            # --- GÜNLÜK ZİRVE TAHMİNİ (ATR BAZLI) ---
+            atr = ta.atr(veri['High'], veri['Low'], veri['Close'], length=14).iloc[-1]
+            zirve_tahmin = kapanis + (atr * 1.5)
+
+            # --- DİĞER VERİLER ---
+            ai_skor = int(rsi * 0.95) if rsi < 75 else 60
+            hedef = kapanis * self.hedef_katsayi
+            stop = kapanis * self.stop_katsayi
+            net_kar = temel_veriler.get('netIncomeToCommon', 0)
 
             return {
-                "sembol": sembol, "fiyat": round(son_fiyat, 2), "ai_puan": int(puan),
-                "trend": "📈 BOĞA" if son_fiyat > ma200 else "📉 AYI",
-                "fib_destek": fib_618, "hedef": round(zirve, 2), "getiri": potansiyel,
-                "bilanco": f"F/K: {round(fk, 2)}" if fk > 0 else "Veri Yok",
-                "grafik_link": f"https://tr.tradingview.com/chart/?symbol=BIST%3A{sembol}",
-                "stop_loss": round(son_fiyat * 0.95, 2)
+                "sembol": sembol, "fiyat": round(float(kapanis), 2),
+                "puan_sayi": puan, "puan_str": f"{puan}/4",
+                "zirve_tahmin": round(float(zirve_tahmin), 2),
+                "ai_skor": ai_skor, "hedef": round(float(hedef), 2),
+                "stop": round(float(stop), 2), "pddd": round(float(pddd), 2),
+                "net_kar": self._format_kar(net_kar),
+                "trend": "GÜÇLÜ" if kapanis > sma20 else "ZAYIF",
+                "para_akisi": "Giriş" if kapanis > veri['Close'].iloc[-2] else "Çıkış"
             }
         except Exception as e:
-            logging.error(f"{sembol} Analiz Hatası: {str(e)}")
+            print(f"Hata {sembol}: {e}")
             return None
+
+    def _format_kar(self, deger):
+        if not deger: return "Veri Yok"
+        if abs(deger) >= 1_000_000_000: return f"{round(deger/1_000_000_000, 2)} Milyar TL"
+        return f"{round(deger/1_000_000, 2)} Milyon TL"
