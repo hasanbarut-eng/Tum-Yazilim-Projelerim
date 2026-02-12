@@ -1,0 +1,15 @@
+{
+    "sermaye_gecmisi": [
+        {
+            "miktar": 1667462.29,
+            "tarih": "2026-02-11 23:53"
+        }
+    ],
+    "aktif_hisseler": {
+        "ESEN": {
+            "lot": 148974,
+            "maliyet": 11.19
+        }
+    },
+    "kapanmis_zararlar": 0.0
+}
