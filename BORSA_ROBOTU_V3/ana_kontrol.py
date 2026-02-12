@@ -1,101 +1,80 @@
 import os
 import yfinance as yf
-from finans_motoru import FinansMotoru # İsim burada güncellendi
+import time
+from finans_motoru import FinansMotoru
 from bildirim_servisi import BildirimServisi
 
+# --- GÖRSEL GÜZELLEŞTİRME ---
+try:
+    from colorama import Fore, Style, init
+    init(autoreset=True)
+    GREEN = Fore.GREEN + Style.BRIGHT
+    RED = Fore.RED + Style.BRIGHT
+    YELLOW = Fore.YELLOW + Style.BRIGHT
+    CYAN = Fore.CYAN + Style.BRIGHT
+except ImportError:
+    # Colorama yoksa hata vermez, düz metin devam eder
+    GREEN = RED = YELLOW = CYAN = ""
+
 # --- AYARLAR VE NESNE BAĞLANTILARI ---
-# GitHub Secrets veya Yerel Ortam Değişkenleri
 TOKEN = os.getenv('TELEGRAM_TOKEN', '8255121421:AAG1biq7jrgLFAbWmzOFs6D4wsPzoDUjYeM')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '-1003728280766')
 
 def ana_dongu():
     try:
-        # Nesneleri Başlat (V4 Sınıf İsimleri)
+        # Nesneleri Başlat
         motor = FinansMotoru()
         bildirim = BildirimServisi(TOKEN, CHAT_ID)
 
-        # Analiz edilecek örnek hisse listesi (BIST)
-        hisseler = ["A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
-    "AKBNK", "AKCNG", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 
-    "AKYHO", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGEK", "ALGYO", "ALKA", "ALKIM", 
-    "ALMAD", "ANELE", "ANGEN", "ANKTM", "ANLST", "ANSA", "ARASE", "ARCLK", "ARDYZ", "ARENA", 
-    "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", 
-    "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", 
-    "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASCM", "BASGZ", "BAYRK", 
-    "BEGYO", "BELEN", "BERA", "BEYAZ", "BFREN", "BIGCH", "BIMAS", "BINHO", "BIOEN", "BIZIM", 
-    "BJKAS", "BLCYT", "BOBET", "BORLS", "BORSK", "BOSSA", "BRISA", "BRKO", "BRKSN", "BRKVY", 
-    "BRLSM", "BRMEN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", 
-    "CANTE", "CASA", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CEYLN", "CIMSA", "CLEBI", 
-    "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CRFSA", "CUSAN", "CVKMD", "CWENE", "DAGI", 
-    "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", 
-    "DOBUR", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", 
-    "EDATA", "EDIP", "EGEEN", "EGGUB", "EGLYO", "EGYO", "EIBHO", "EIPH", "EKSUN", "ELITE", 
-    "EMKEL", "EMLYO", "ENARI", "ENJSA", "ENKAI", "ENTRA", "ERBOS", "EREGL", "ERSU", "ESCAR", 
-    "ESCOM", "ESEN", "ETILR", "EUHOL", "EUKYO", "EUPWR", "EUREN", "EYGYO", "FADE", "FENER", 
-    "FLAP", "FMIZP", "FONET", "FORMT", "FORTE", "FRIGO", "FROTO", "FZLGY", "GARAN", "GARFA", 
-    "GEDIK", "GEDZA", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", 
-    "GOODY", "GOZDE", "GRNYO", "GRSEL", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", 
-    "HALKB", "HATEK", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", 
-    "ICBCT", "ICUGS", "IDGYO", "IEYHO", "IHEVA", "IHLGM", "IHLAS", "IHYAY", "IMASM", "INDES", 
-    "INFO", "INGRM", "INTEM", "INVEO", "INVES", "IPEKE", "ISATR", "ISBTR", "ISCTR", "ISDMR", 
-    "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISSEN", "ISYAT", "IZENR", "IZFAS", "IZINV", 
-    "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", "KCAER", 
-    "KCHOL", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRHO", "KLSYN", "KLYN", 
-    "KMEPU", "KMPUR", "KNFRT", "KONKA", "KONTR", "KONYA", "KORDS", "KOTON", "KOZAL", "KOZAA", 
-    "KRDMA", "KRDMB", "KRDMD", "KRGYO", "KRONT", "KRSTL", "KRTEK", "KSTUR", "KUTPO", "KUVVA", 
-    "KUYAS", "KZBGY", "KZGYO", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGAS", "LOGO", "LRSHO", 
-    "LUKSK", "MAALT", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", 
-    "MEGAP", "MEKAG", "MEPET", "MERCN", "MERKO", "METRO", "METUR", "MHRGY", "MIATK", "MIPAZ", 
-    "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MSGYO", "MTRKS", "MTRYO", "MZHLD", 
-    "NATEN", "NETAS", "NIBAS", "NTGAZ", "NTHOL", "NUGYO", "NUHCM", "OBAMS", "OBASE", "ODAS", 
-    "ODINE", "ONCSM", "ORCAY", "ORGE", "ORMA", "OSMEN", "OSTIM", "OTKAR", "OYAKC", "OYAYO", 
-    "OYLUM", "OYYAT", "OZGYO", "OZKGY", "OZRDN", "OZSUB", "PAGYO", "PAMEL", "PAPIL", "PARSN", 
-    "PASEU", "PATEK", "PCILT", "PEGYO", "PEKGY", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", 
-    "PKART", "PKENT", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRDGS", "PRKAB", "PRKME", "PRZMA", 
-    "PSGYO", "QNBFB", "QNBFL", "QUAGR", "RALYH", "RAYSG", "REEDR", "RNPOL", "RODRG", "RTALB", 
-    "RUBNS", "RYGYO", "RYSAS", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFO", "SANKO", "SARKY", 
-    "SARTN", "SASA", "SAYAS", "SDTTR", "SEKFK", "SEKUR", "SELEC", "SELGD", "SELVA", "SEYKM", 
-    "SILVR", "SISE", "SKBNK", "SKTAS", "SMART", "SMRTG", "SNGYO", "SNICA", "SNKPA", "SOKE", 
-    "SOKM", "SONME", "SRVGY", "SUMAS", "SUNTC", "SURGY", "SUWEN", "TABGD", "TARKM", "TATEN", 
-    "TATGD", "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TERA", "TETMT", "TGSAS", "THYAO", 
-    "TIRE", "TKFEN", "TKNSA", "TMSN", "TNZTP", "TOASO", "TRCAS", "TRGYO", "TRILC", "TSKB", 
-    "TSGYO", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", 
-    "UFUK", "ULAS", "ULFAK", "ULUSE", "ULUFA", "ULUN", "UMPAS", "USAK", "VAKBN", "VAKFN", 
-    "VAKKO", "VANGD", "VBTYZ", "VERTU", "VERUS", "VESBE", "VESTL", "VKFYO", "VKGYO", "VKING", 
-    "YAPRK", "YATAS", "YAYLA", "YBTAS", "YEOTK", "YESIL", "YGGYO", "YGYO", "YKBNK", "YKSLN", 
-    "YONGA", "YUNSA", "YYAPI", "YYLGD", "ZEDUR", "ZOREN", "ZRGYO"]
+        # BIST Tam Liste (Kısaltılmış örnek, tüm listeyi buraya ekleyebilirsiniz)
+        hisseler = ["A1CAP", "ACSEL", "ADESE", "AEFES", "AGHOL", "AKBNK", "AKSA", "ALARK", "ARCLK", "ASELS", "BRKO", "ESEN", "THYAO", "TUPRS"]
+        # - ESEN ve BRKO listenizde kritik öneme sahip.
+
         analiz_sonuclari = []
 
-        print(f"--- Borsa Robotu V4 Analizi Başladı ---")
+        print(f"\n{CYAN}===============================================")
+        print(f"{CYAN}🚀 BORSA ROBOTU V8.4 ZİRVE - ANALİZ BAŞLIYOR")
+        print(f"{CYAN}===============================================\n")
 
-        for sembol in hisseler:
+        for index, sembol in enumerate(hisseler, 1):
             try:
-                hisse = yf.Ticker(sembol)
-                # Teknik veri (1 yıllık gün sonu verileri)
+                # Terminalde ilerleme durumunu göster
+                print(f"{Style.DIM}[{index}/{len(hisseler)}]{Style.NORMAL} {sembol.ljust(6)}", end=" ", flush=True)
+                
+                # Yahoo Finance bağlantısı (.IS eki BIST için otomatize edilebilir)
+                hisse_kodu = f"{sembol}.IS"
+                hisse = yf.Ticker(hisse_kodu)
+                
+                # Veri Çekme (Hata yakalamalı)
                 veri = hisse.history(period="1y")
-                # Temel veri (Bilanço ve Oranlar)
                 temel = hisse.info
 
-                # V4 Motoru ile analiz et
+                # Finans Motoru Analizi (PD/DD 1.5 Sınırı Burada)
                 sonuc = motor.analiz_et(sembol, veri, temel)
                 
                 if sonuc:
                     analiz_sonuclari.append(sonuc)
-                    print(f"[OK] {sembol} analizi tamamlandı.")
+                    # İşte o meşhur yeşil kutucuklar ve başarı sinyali
+                    print(f"{GREEN}[ OK ] PD/DD: {sonuc['pddd']} | Puan: {sonuc['puan_str']} ✅")
                 else:
-                    print(f"[-] {sembol} kriterlere (PD/DD > 1 vb.) uymadığı için elendi.")
+                    # Kriter dışı kalınca sarı uyarı
+                    print(f"{YELLOW}[ ELENDİ ] PD/DD > 1.5 veya Veri Eksik ⏳")
 
             except Exception as e:
-                print(f"[HATA] {sembol} taranırken sorun oluştu: {e}")
+                print(f"{RED}[ HATA ] {str(e)[:30]}... ❌")
+                continue
 
-        # Sonuçları Gönder
+        # --- RAPORLAMA AŞAMASI ---
+        print(f"\n{CYAN}-----------------------------------------------")
         if analiz_sonuclari:
+            print(f"{GREEN}🎯 Analiz Tamamlandı! {len(analiz_sonuclari)} Hisse Telegram'a Gönderiliyor...")
             bildirim.rapor_gonder(analiz_sonuclari)
         else:
-            print("Analiz sonucu kriterlere uyan hisse bulunamadı.")
+            print(f"{RED}⚠ Kriterlere uyan (PD/DD <= 1.5) hisse bulunamadı.")
+        print(f"{CYAN}-----------------------------------------------\n")
 
     except Exception as e:
-        print(f"KRİTİK HATA: {e}")
+        print(f"\n{RED}‼ KRİTİK SİSTEM HATASI: {e}")
 
 if __name__ == "__main__":
     ana_dongu()

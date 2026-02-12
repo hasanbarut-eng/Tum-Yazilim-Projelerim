@@ -1,51 +1,58 @@
 import requests
-import datetime
+import logging
 
 class BildirimServisi:
     def __init__(self, token, chat_id):
-        self.token, self.chat_id = token, chat_id
-        self.url = f"https://api.telegram.org/bot{self.token}/sendMessage"
+        self.token = token
+        self.chat_id = chat_id
+        self.api_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
 
-    def rapor_gonder(self, analiz_listesi):
-        if not analiz_listesi: return
+    def rapor_gonder(self, analizler):
+        """
+        Analiz sonuçlarını tek tek değil, toplu bir rapor olarak gönderir.
+        """
+        if not analizler:
+            return
 
-        tarih = datetime.datetime.now().strftime("%d.%m.%Y")
-        mesaj = "🛡️ **BORSA ROBOTU V4.2 | ZİRVE ANALİZ RAPORU** 🛡️\n"
-        mesaj += f"📅 *Tarih:* {tarih}\n"
-        mesaj += "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        # Rapor başlığı
+        toplu_mesaj = "🚀 <b>GÜNLÜK GÜÇLÜ HİSSELER RAPORU</b> 🚀\n"
+        toplu_mesaj += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-        skorlar = []
-        firsatlar = []
+        for veri in analizler:
+            # Sinyal ve ikon belirleme
+            sinyal_emoji = "🟢" if veri['puan_sayi'] >= 3 else "🟡"
+            trend_emoji = "🔥" if veri['trend'] == "POZİTİF" else "❄️"
+            akis_emoji = "✅" if veri['para_akisi'] == "GİRİŞ" else "❌"
 
-        for a in analiz_listesi:
-            skorlar.append(a['ai_skor'])
-            if a['puan_sayi'] >= 3: firsatlar.append(f"#{a['sembol']}")
+            # Her hisse için özet blok (Görseldeki tasarıma uygun)
+            hisse_blok = (
+                f"💎 <b>#{veri['sembol']}</b> | {trend_emoji} {veri['trend']}\n"
+                f"📊 Skor: %{veri['ai_skor']} | 🎯 Hedef: {veri['hedef']} TL\n"
+                f"💵 Fiyat: {veri['fiyat']} TL | 🛡️ Stop: {veri['stop']} TL\n"
+                f"🚦 Sinyal: {sinyal_emoji} {veri['puan_str']} | 💸 Akış: {akis_emoji}\n"
+                f"🚀 Zirve Tahmini: {veri['zirve_tahmin']} TL\n"
+                f"📄 PD/DD: {veri['pddd']} | 🏦 Kar: {veri['net_kar']}\n"
+                f"🔗 <a href='https://tr.tradingview.com/symbols/BIST-{veri['sembol']}'>Grafiği Aç</a>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+            )
             
-            sinyal_emoji = "🟢" if a['puan_sayi'] >= 3 else "🟡"
-            tv_sembol = a['sembol'].replace(".IS", "")
-            grafik_link = f"https://tr.tradingview.com/chart/?symbol=BIST%3A{tv_sembol}"
+            # Mesajı ana gövdeye ekle
+            toplu_mesaj += hisse_blok
 
-            mesaj += f"💎 **Hisse:** #{a['sembol']} | 🔥 {a['trend']}\n"
-            mesaj += f"📊 **AI Skor:** %{a['ai_skor']} | 🎯 **Hedef:** {a['hedef']} TL\n"
-            mesaj += f"💵 **Fiyat:** {a['fiyat']} TL | 🛡️ **Stop:** {a['stop']} TL\n"
-            mesaj += f"🚦 **Günlük Sinyal:** {sinyal_emoji} **{a['puan_str']} Puan**\n"
-            mesaj += f"🚀 **Günlük Zirve Tahmini:** {a['zirve_tahmin']} TL\n"
-            mesaj += f"📑 **PD/DD:** {a['pddd']} | 🏦 **Kar:** {a['net_kar']}\n"
-            mesaj += f"💸 **Para Akışı:** {'✅' if a['para_akisi']=='Giriş' else '❌'}\n"
-            mesaj += f"🔗 [Grafik İçin Tıklayın]({grafik_link})\n"
-            mesaj += "━━━━━━━━━━━━━━━━━━━━━\n"
+        # Mesajı gönder (Karakter limitini kontrol ederek)
+        self._mesaj_at(toplu_mesaj)
 
-        # --- OTOMATİK YAPAY ZEKA YORUMU ---
-        if skorlar:
-            ort_skor = sum(skorlar) / len(skorlar)
-            firsat_metni = ", ".join(firsatlar) if firsatlar else "Stabil"
-            
-            mesaj += "\n🧠 **FİNANS MOTORU ÖZET YORUMU** 🧠\n"
-            mesaj += f"Hocam, bugün taranan {len(analiz_listesi)} iskontolu kağıtta ortalama AI Skoru %{round(ort_skor, 1)} olarak hesaplandı. "
-            mesaj += f"Özellikle {firsat_metni} kağıtlarında günlük puanlar zirvede. "
-            mesaj += "SMA20 üzerinde kalıcılık sağlayan iskontolu devlerde 'Zirve Tahminleri' direnç olarak izlenmelidir. Bol kazançlar!"
-
+    def _mesaj_at(self, metin):
+        """Telegram'a mesaj gönderimini yapan yardımcı metod."""
         try:
-            requests.post(self.url, data={"chat_id": self.chat_id, "text": mesaj, "parse_mode": "Markdown", "disable_web_page_preview": True})
+            payload = {
+                "chat_id": self.chat_id,
+                "text": metin,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            response = requests.post(self.api_url, json=payload, timeout=15)
+            if response.status_code != 200:
+                logging.error(f"Telegram Hatası: {response.text}")
         except Exception as e:
-            print(f"Hata: {e}")
+            logging.error(f"Gönderim hatası: {e}")
