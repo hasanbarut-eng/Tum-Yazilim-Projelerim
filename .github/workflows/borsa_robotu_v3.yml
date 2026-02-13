@@ -7,12 +7,13 @@ on:
     - cron: '00 10 * * 1-5'  # 13:00 TSİ (Öğle Analizi)
     - cron: '30 14 * * 1-5'  # 17:30 TSİ (Seans Sonu Fırsatları)
     - cron: '15 15 * * 1-5'  # 18:15 TSİ (Kapanış Onayı)
-  workflow_dispatch:        # Telefonundan "Run Workflow" diyerek tetiklemeni sağlar!
+  workflow_dispatch:        # Telefonundan "Run Workflow" diyerek manuel tetikleme sağlar
 
 jobs:
   run_analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # SÜRE SINIRI 60 DAKİKAYA ÇIKARILDI (15 dakika yetmiyordu)
+    timeout-minutes: 60 
 
     steps:
       - name: 📂 Proje Kodlarını Çek
@@ -29,8 +30,8 @@ jobs:
           pip install pandas yfinance requests numpy pandas-ta
 
       - name: 🤖 Robotu Ateşle
+        # BURASI ÖNEMLİ: ana_kontrol.py içinde döngü (while True) olmamalı!
         run: python BORSA_ROBOTU_V3/ana_kontrol.py
         env:
-          # GitHub Secrets'tan gelen anahtarlar
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
