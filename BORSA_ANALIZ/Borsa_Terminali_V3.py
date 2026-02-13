@@ -1,3 +1,8 @@
+import streamlit as st
+
+# BU SATIR HER ŞEYDEN ÖNCE GELMELİ
+st.set_page_config(page_title="BIST Senior Terminal V3", layout="wide")
+
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
