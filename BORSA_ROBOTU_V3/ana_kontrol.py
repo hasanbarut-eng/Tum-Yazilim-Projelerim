@@ -1,32 +1,19 @@
 import os
 import yfinance as yf
-import time
 import logging
-from datetime import datetime
 from finans_motoru import FinansMotoru
 from bildirim_servisi import BildirimServisi
 
-# --- GÖRSEL GÜZELLEŞTİRME (GitHub & Terminal Uyumluluğu) ---
-try:
-    from colorama import Fore, Style, init
-    init(autoreset=True)
-    GREEN, RED, YELLOW, CYAN = Fore.GREEN + Style.BRIGHT, Fore.RED + Style.BRIGHT, Fore.YELLOW + Style.BRIGHT, Fore.CYAN + Style.BRIGHT
-    DIM, NORMAL = Style.DIM, Style.NORMAL
-except Exception:
-    GREEN = RED = YELLOW = CYAN = DIM = NORMAL = ""
-
 # --- YAPILANDIRMA ---
-# Yerelde kodun içine yazdığın bilgiler önceliklidir, GitHub'da Secrets'tan okunur.
 TOKEN = os.getenv('TELEGRAM_TOKEN', '8255121421:AAG1biq7jrgLFAbWmzOFs6D4wsPzoDUjYeM')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '-1003728280766')
-RAPOR_SAATLERI = ["09:50", "13:00", "17:30", "18:15"]
 
 def ana_dongu():
     try:
         motor = FinansMotoru()
         bildirim = BildirimServisi(TOKEN, CHAT_ID)
         
-        # Senin devasa hisse listen
+        # Senin mühürlü hisse listen
         hisseler = [
                 "A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
     "AKBNK", "AKCNG", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 
@@ -79,60 +66,23 @@ def ana_dongu():
     "YONGA", "YUNSA", "YYAPI", "YYLGD", "ZEDUR", "ZOREN", "ZRGYO"
         ]
 
-        analiz_sonuclari = []
-        print(f"\n{CYAN}===============================================")
-        print(f"{CYAN}🚀 BORSA ANALİZ ROBOTU V9.5 AKTİF")
-        print(f"{CYAN}===============================================\n")
-
-        for index, s in enumerate(hisseler, 1):
+        analizler = []
+        for s in hisseler:
             try:
-                print(f"{DIM}[{index}/{len(hisseler)}]{NORMAL} {s.ljust(6)}", end=" ", flush=True)
                 h = yf.Ticker(f"{s}.IS")
                 v_gun = h.history(period="1y", interval="1d")
                 v_hafta = h.history(period="2y", interval="1wk")
-                
-                if v_gun.empty or v_hafta.empty:
-                    print(f"{YELLOW}-> Veri Yok")
-                    continue
-
+                if v_gun.empty or v_hafta.empty: continue
                 res = motor.analiz_et(s, v_gun, v_hafta, h.info)
-                if res:
-                    analiz_sonuclari.append(res)
-                    print(f"{GREEN}-> ✅")
-                else:
-                    print(f"{DIM}-> ⏳")
-            except Exception as e:
-                print(f"{RED}-> ❌")
-                continue
+                if res: analizler.append(res)
+            except: continue
 
-        if analiz_sonuclari:
-            bildirim.rapor_gonder(analiz_sonuclari)
-            print(f"\n{GREEN}🎯 {len(analiz_sonuclari)} Hisse Telegram'a uçuruldu!")
-        else:
-            print(f"\n{YELLOW}⚠ Kriterlere uyan hisse bulunamadı.")
+        if analizler: bildirim.rapor_gonder(analizler)
 
     except Exception as e:
-        print(f"{RED}‼ KRİTİK SİSTEM HATASI: {e}")
+        logging.error(f"Sistem Hatası: {e}")
 
 if __name__ == "__main__":
-    print(f"{CYAN}⏰ Zamanlayıcı Başlatıldı. Rapor Saatleri: {RAPOR_SAATLERI}")
-    print(f"{CYAN}📅 Hafta sonları sistem uyku moduna geçecektir.")
-    
-    while True:
-        simdi_dt = datetime.now()
-        simdi_saat = simdi_dt.strftime("%H:%M")
-        gun_index = simdi_dt.weekday() # 0=Pazartesi, 4=Cuma
-
-        # Hafta içi mi?
-        if gun_index < 5:
-            if simdi_saat in RAPOR_SAATLERI:
-                print(f"\n🔔 Saat geldi: {simdi_saat} | Analiz başlatılıyor...")
-                ana_dongu()
-                time.sleep(65) # Aynı dakika içinde tekrar çalışmaması için
-        else:
-            # Hafta sonu ise sessiz kal (Günde bir kez log düşer)
-            if simdi_saat == "10:00":
-                print(f"{YELLOW}😴 Bugün hafta sonu. Borsa kapalı, analiz yapılmıyor.")
-                time.sleep(65)
-
-        time.sleep(30) # Her 30 saniyede bir saati kontrol et
+    # GitHub üzerinde sonsuz döngü (while True) OLMAZ
+    # Sadece analizi yapıp kapanması gerekir.
+    ana_dongu()
