@@ -3,52 +3,47 @@ import logging
 
 class BildirimServisi:
     def __init__(self, token, chat_id):
-        self.token = token
+        self.api_url = f"https://api.telegram.org/bot{token}/sendMessage"
         self.chat_id = chat_id
-        self.api_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
 
     def rapor_gonder(self, analizler):
-        """
-        Analiz sonuçlarını tek tek değil, toplu bir rapor olarak gönderir.
-        """
-        if not analizler:
-            return
-
-        # Rapor başlığı
-        toplu_mesaj = "🚀 <b>GÜNLÜK GÜÇLÜ HİSSELER RAPORU</b> 🚀\n"
-        toplu_mesaj += "━━━━━━━━━━━━━━━━━━━━\n\n"
-
-        for veri in analizler:
-            # Sinyal ve ikon belirleme
-            sinyal_emoji = "🟢" if veri['puan_sayi'] >= 3 else "🟡"
-            trend_emoji = "🔥" if veri['trend'] == "POZİTİF" else "❄️"
-            akis_emoji = "✅" if veri['para_akisi'] == "GİRİŞ" else "❌"
-
-            # Her hisse için özet blok (Görseldeki tasarıma uygun)
+        if not analizler: return
+        
+        # Analizleri puana göre sırala
+        analizler.sort(key=lambda x: x['ai_skor'], reverse=True)
+        
+        baslik = "🚀 <b>V9.2 ANALİST RAPORU (Strateji Modu)</b> 🚀\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        mesaj = baslik
+        
+        for v in analizler:
+            emoji = "🔥" if "TAVAN" in v['status'] else "💎" if v['is_elmas'] else "🏛"
             hisse_blok = (
-                f"💎 <b>#{veri['sembol']}</b> | {trend_emoji} {veri['trend']}\n"
-                f"📊 Skor: %{veri['ai_skor']} | 🎯 Hedef: {veri['hedef']} TL\n"
-                f"💵 Fiyat: {veri['fiyat']} TL | 🛡️ Stop: {veri['stop']} TL\n"
-                f"🚦 Sinyal: {sinyal_emoji} {veri['puan_str']} | 💸 Akış: {akis_emoji}\n"
-                f"🚀 Zirve Tahmini: {veri['zirve_tahmin']} TL\n"
-                f"📄 PD/DD: {veri['pddd']} | 🏦 Kar: {veri['net_kar']}\n"
-                f"🔗 <a href='https://tr.tradingview.com/symbols/BIST-{veri['sembol']}'>Grafiği Aç</a>\n"
+                f"{emoji} <b>#{v['sembol']} | {v['status']}</b>\n"
+                f"📅 <b>VADE:</b> {v['vade']}\n"
+                f"💡 <b>STRATEJİ:</b> {v['yorum']}\n"
+                f"────────────────────\n"
+                f"📊 Skor: %{v['ai_skor']} | 🛒 Fiyat: {v['fiyat']} TL\n"
+                f"📦 FDO: %{v['fdo']} | 📄 PD/DD: {v['pddd']}\n"
+                f"🔗 <a href='https://tr.tradingview.com/symbols/BIST-{v['sembol']}'>Grafiği Aç</a>\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
             )
             
-            # Mesajı ana gövdeye ekle
-            toplu_mesaj += hisse_blok
-
-        # Mesajı gönder (Karakter limitini kontrol ederek)
-        self._mesaj_at(toplu_mesaj)
+            # Karakter limiti kontrolü (4000 karakteri geçerse gönder ve yeni mesaj başlat)
+            if len(mesaj) + len(hisse_blok) > 4000:
+                self._mesaj_at(mesaj)
+                mesaj = baslik + hisse_blok
+            else:
+                mesaj += hisse_blok
+        
+        # Kalan son parçayı gönder
+        self._mesaj_at(mesaj)
 
     def _mesaj_at(self, metin):
-        """Telegram'a mesaj gönderimini yapan yardımcı metod."""
         try:
             payload = {
-                "chat_id": self.chat_id,
-                "text": metin,
-                "parse_mode": "HTML",
+                "chat_id": self.chat_id, 
+                "text": metin, 
+                "parse_mode": "HTML", 
                 "disable_web_page_preview": True
             }
             response = requests.post(self.api_url, json=payload, timeout=15)
