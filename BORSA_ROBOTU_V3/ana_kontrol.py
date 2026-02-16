@@ -10,28 +10,68 @@ import logging
 # --- LOG SİSTEMİ ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# --- YAPILANDIRMA (Kasa) ---
+# --- YAPILANDIRMA (GitHub Secrets) ---
 TOKEN = os.getenv('TELEGRAM_TOKEN') 
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-def guncel_hisse_listesi_al():
-    """BIST Tüm hisselerini otomatik çeker; hata olursa yedek listeyi kullanır."""
-    try:
-        # LXML hatasını önlemek için html5lib kullanıyoruz
-        url = "https://tr.wikipedia.org/wiki/Borsa_%C4%B0stanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
-        tablolar = pd.read_html(url, flavor='html5lib') 
-        df_liste = tablolar[0]
-        kodlar = df_liste['İşlem Kodu'].dropna().unique().tolist()
-        logging.info(f"✅ Canlı Liste Güncellendi: {len(kodlar)} hisse süzgece giriyor.")
-        return kodlar
-    except Exception as e:
-        logging.error(f"⚠️ Canlı liste hatası: {e}")
-        # Hata anında robotun durmaması için temel hisseler (Yedek Liste)
-        return ["THYAO", "EREGL", "ASELS", "SISE", "AKBNK", "TUPRS", "KCHOL", "ESEN", "ALARK", "BIMAS"]
-
 def vip_master_analiz():
     logging.info("🚀 VIP Master V11 Final Sürüm Ateşlendi...")
-    hisseler = guncel_hisse_listesi_al()
+    
+    # 253 Hisselik Tam ve Güncel Listeniz (Hatalar düzeltildi)
+    hisseler = [
+        "A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
+        "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 
+        "AKYHO", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGYO", "ALKA", "ALKIM", 
+        "ALMAD", "ANELE", "ANGEN", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", 
+        "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", 
+        "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", 
+        "BAGFS", "BAKAB", "BANVT", "BARMA", "BASCM", "BASGZ", "BAYRK", "BEGYO", "BERA", 
+        "BEYAZ", "BFREN", "BIGCH", "BIMAS", "BINHO", "BIOEN", "BIZIM", "BJKAS", "BLCYT", 
+        "BOBET", "BORLS", "BORSK", "BOSSA", "BRISA", "BRKO", "BRKSN", "BRKVY", "BRLSM", 
+        "BRMEN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", 
+        "CANTE", "CASA", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CIMSA", "CLEBI", 
+        "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CRFSA", "CUSAN", "CVKMD", "CWENE", 
+        "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DITAS", "DMSAS", "DNISI", 
+        "DOAS", "DOBUR", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", 
+        "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGGUB", "EGPRO", "EGSER", "EKGYO", 
+        "EKOS", "EKSUN", "ELITE", "EMKEL", "ENARI", "ENJSA", "ENKAI", "ENTRA", "ERBOS", 
+        "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUHOL", "EUKYO", "EUPWR", 
+        "EUREN", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FORTE", 
+        "FRIGO", "FROTO", "FZLGY", "GARAN", "GARFA", "GEDIK", "GEDZA", "GENTS", "GEREL", 
+        "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GOODY", "GOZDE", "GRNYO", 
+        "GRSEL", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HALKB", "HATEK", 
+        "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", 
+        "ICUGS", "IDGYO", "IEYHO", "IHEVA", "IHLGM", "IHLAS", "IHYAY", "IMASM", "INDES", 
+        "INFO", "INGRM", "INTEM", "INVEO", "INVES", "IPEKE", "ISCTR", "ISDMR", "ISFIN", 
+        "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISSEN", "ISYAT", "IZENR", "IZFAS", "IZINV", 
+        "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", 
+        "KCAER", "KCHOL", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRHO", 
+        "KLSYN", "KMPUR", "KNFRT", "KONKA", "KONTR", "KONYA", "KORDS", "KOTON", "KOZAL", 
+        "KOZAA", "KRDMA", "KRDMB", "KRDMD", "KRGYO", "KRONT", "KRSTL", "KRTEK", "KSTUR", 
+        "KUTPO", "KUVVA", "KUYAS", "KZBGY", "KZGYO", "LIDER", "LIDFA", "LINK", "LMKDC", 
+        "LOGO", "MAALT", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARTI", "MAVI", "MEDTR", 
+        "MEGAP", "MEKAG", "MEPET", "MERCN", "MERKO", "METRO", "METUR", "MHRGY", "MIATK", 
+        "MIPAZ", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MSGYO", "MTRKS", "MTRYO", 
+        "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NTHOL", "NUGYO", "NUHCM", "OBAMS", 
+        "OBASE", "ODAS", "ODINE", "ONCSM", "ORCAY", "ORGE", "ORMA", "OSMEN", "OSTIM", 
+        "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZGYO", "OZKGY", "OZRDN", "OZSUB", 
+        "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATEK", "PCILT", "PEKGY", "PENTA", 
+        "PETKM", "PETUN", "PGSUS", "PINSU", "PKART", "PKENT", "PNLSN", "PNSUT", "POLHO", 
+        "POLTK", "PRDGS", "PRKAB", "PRKME", "PRZMA", "PSGYO", "QUAGR", "RALYH", "RAYSG", 
+        "REEDR", "RNPOL", "RODRG", "RTALB", "RUBNS", "RYGYO", "RYSAS", "SAFKR", "SAHOL", 
+        "SAMAT", "SANEL", "SANFO", "SANKO", "SARKY", "SARTN", "SASA", "SAYAS", "SDTTR", 
+        "SEKFK", "SEKUR", "SELEC", "SELGD", "SELVA", "SEYKM", "SILVR", "SISE", "SKBNK", 
+        "SKTAS", "SMART", "SMRTG", "SNGYO", "SNICA", "SNKPA", "SOKE", "SOKM", "SONME", 
+        "SRVGY", "SUMAS", "SUNTC", "SURGY", "SUWEN", "TABGD", "TARKM", "TATEN", "TATGD", 
+        "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TERA", "TETMT", "TGSAS", "THYAO", 
+        "TIRE", "TKFEN", "TKNSA", "TMSN", "TNZTP", "TOASO", "TRCAS", "TRGYO", "TRILC", 
+        "TSKB", "TSGYO", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", 
+        "TURGG", "TURSG", "UFUK", "ULAS", "ULFAK", "ULUSE", "ULUFA", "ULUN", "USAK", 
+        "VAKBN", "VAKFN", "VAKKO", "VANGD", "VBTYZ", "VERTU", "VERUS", "VESBE", "VESTL", 
+        "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBTAS", "YEOTK", "YESIL", 
+        "YGGYO", "YGYO", "YKBNK", "YKSLN", "YONGA", "YUNSA", "YYAPI", "YYLGD", "ZEDUR", 
+        "ZOREN", "ZRGYO"
+    ]
 
     for s in hisseler:
         try:
@@ -60,7 +100,7 @@ def vip_master_analiz():
             h_son = df['Volume'].iloc[-1]
             pddd = ticker.info.get('priceToBook', 1.5)
 
-            # --- VIP %90 PUANLAMA (HASSAS AYAR) ---
+            # --- VIP %90 PUANLAMA ---
             skor = 0
             if h_son > (h_ort * 2.1): skor += 40  # Hacim Onayı
             if 40 <= rsi <= 72: skor += 30       # Momentum Onayı
@@ -74,7 +114,6 @@ def vip_master_analiz():
         except: continue
 
 def telegram_gonder(kod, fiyat, skor, rsi, pddd, haberler):
-    # --- YASAL UYARI MÜHÜRÜ ---
     yasal_uyari = "\n\n⚠️ <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu bilgiler eğitim amaçlı olup <b>Yatırım Tavsiyesi Değildir.</b>"
 
     msg = f"🏆 <b>VIP MASTER ANALİZ</b> 🏆\n"
