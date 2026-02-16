@@ -1,7 +1,8 @@
 streamlit
 yfinance
 pandas
+pandas-ta
 numpy
 plotly
-scikit-learn
 matplotlib
+scikit-learn
