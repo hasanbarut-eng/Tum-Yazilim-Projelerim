@@ -2,18 +2,18 @@ name: Borsa V3 Stratejik Analiz
 
 on:
   schedule:
-    # Türkiye saatine (UTC+3) göre mühürlenmiş 5 kritik seans vakti
-    - cron: '30 06 * * 1-5'  # 09:30 TSİ (Açılış Öncesi Son Kontrol)
-    - cron: '15 07 * * 1-5'  # 10:15 TSİ (Açılış İlk Analiz)
+    # Türkiye saatine (UTC+3) göre ayarlanmış 5 seans vakti:
+    - cron: '30 06 * * 1-5'  # 09:30 TSİ (Açılış Hazırlık)
+    - cron: '15 07 * * 1-5'  # 10:15 TSİ (İlk Seans Analizi)
     - cron: '00 10 * * 1-5'  # 13:00 TSİ (Öğle Arası Değerlendirme)
     - cron: '30 14 * * 1-5'  # 17:30 TSİ (Kapanış Öncesi Fırsatlar)
-    - cron: '20 15 * * 1-5'  # 18:20 TSİ (Gün Sonu Kesin Onay)
-  workflow_dispatch:         # İstediğin an telefonundan manuel tetikleme sağlar
+    - cron: '20 15 * * 1-5'  # 18:20 TSİ (Kapanış Kesin Onayı)
+  workflow_dispatch:         # Manuel çalıştırma butonu
 
 jobs:
   run_analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 60      # Analiz kapsamlı olduğu için süre geniş tutuldu
+    timeout-minutes: 60 
 
     steps:
       - name: 📂 Proje Kodlarını Çek
@@ -30,7 +30,7 @@ jobs:
           pip install pandas yfinance requests numpy pandas-ta
 
       - name: 🤖 Robotu Ateşle
-        # DİKKAT: Ana dizindeki 'borsa_robotu_yeni.py' dosyasını çalıştırır
+        # Dosya adı borsa_robotu_yeni.py olarak mühürlendi
         run: python borsa_robotu_yeni.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
