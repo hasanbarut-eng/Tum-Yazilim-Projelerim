@@ -16,6 +16,7 @@ with st.sidebar:
     st.markdown("---")
     st.link_button("📊 Borsa Robotu'nu Aç", "https://hasan-barut-borsa.streamlit.app/", use_container_width=True)
     st.link_button("🤖 Web Robotu'nu Aç", "https://borsa-webrobotu.streamlit.app/", use_container_width=True)
+    st.link_button("🌐 Analiz Robotu ", "https://tum-yazilim-v3.streamlit.app/", use_container_width=True)
     st.markdown("---")
 
 # --- GÜVENLİK KATMANI ---

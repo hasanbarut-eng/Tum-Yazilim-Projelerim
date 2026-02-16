@@ -1,128 +1,162 @@
-import yfinance as yf
+import streamlit as st
 import pandas as pd
+import yfinance as yf
 import pandas_ta as ta
-import requests
-import time
+import json
 import os
-import logging
+import hashlib
+import time
 from datetime import datetime
 
-# --- KURAL MERKEZİ VE AYARLAR ---
-# Sizin tarafınızdan yapılandırılan WhatsApp bilgileri
-INSTANCE_ID = "instance161474" 
-TOKEN = "phuru66rxhdjhxgr"
-TELEFON = "+905372657886"
-KLASOR_YOLU = r"C:\Yazilim_Projelerim\BORSA_ANALIZ"
+# --- 1. GÜVENLİK VE VERİ YÖNETİMİ ---
+DB_FILE = "users_db.json"
 
-# Loglama yapılandırması (Hataları dosyaya kaydeder)
-os.makedirs(KLASOR_YOLU, exist_ok=True)
-logging.basicConfig(
-    filename=os.path.join(KLASOR_YOLU, 'borsa_robotu_hata.log'),
-    level=logging.ERROR,
-    format='%(asctime)s - %(message)s'
-)
+def sifrele(s): 
+    return hashlib.sha256(str.encode(s)).hexdigest()
 
-class BorsaTerminaliFinal:
-    def __init__(self):
-        self.suffix = ".IS"
-        # BIST-TÜM: 500+ Hisse Listesi
-        self.hisseler = [
-            "A1CAP", "ACSEL", "ADEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSYG", "AKYHO", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGYO", "ALKA", "ALMAD", "ALTNY", "ALVES", "ANELE", "ANGEN", "ANKTM", "ANHYT", "ANSGR", "ANTENE", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASGZ", "BASCM", "BAYRK", "BEBEK", "BERA", "BEYAZ", "BFREN", "BIENP", "BIGCH", "BIMAS", "BINHO", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BMTKS", "BNASL", "BOBET", "BORLS", "BORSK", "BOSSA", "BRISA", "BRKO", "BRKSN", "BRKVY", "BRLSM", "BRMEN", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", "CANTE", "CASA", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CENIT", "CEOEM", "CIMSA", "CLEBI", "CONSE", "COSMO", "CRDFA", "CREDO", "CVKMD", "CWENE", "DAGHL", "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", "DOBUR", "DCOIT", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGEPO", "EGGUB", "EGPRO", "EGSER", "EKGYO", "EKIZ", "EKOS", "EKSUN", "ELITE", "EMKEL", "ENERY", "ENJSA", "ENKAI", "ENTRA", "ERBOS", "EREGL", "ERSU", "ESCOM", "ESEN", "ETILR", "EUPWR", "EUREN", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FORTE", "FRIGO", "FROTO", "FZLGY", "GARAN", "GARFA", "GAYE", "GEDIK", "GEDZA", "GENIL", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GMTAS", "GOKNR", "GOLTS", "GOODY", "GOZDE", "GRNYO", "GRSEL", "GSDDE", "GSDHO", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HALKB", "HATEK", "HDFGS", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", "IDEAS", "IDGYO", "IEYHO", "IHEVA", "IHGZT", "IHLAS", "IHLGM", "IHYAY", "IMASM", "INDES", "INFO", "INGRM", "INTEM", "INVEO", "INVES", "IPEKE", "ISATR", "ISBTR", "ISCTR", "ISDMR", "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISSEN", "ISYAT", "ITTFH", "IZENR", "IZFAS", "IZINV", "IZMDC", "JANTS", "KAPLM", "KARYE", "KATMR", "KAYSE", "KCAER", "KCHOL", "KENT", "KERVT", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRHO", "KLSYN", "KLYS", "KMEPU", "KNFRT", "KOCAER", "KOCMT", "KONTR", "KONYA", "KORDS", "KOZAA", "KOZAL", "KPOWR", "KRDMA", "KRDMB", "KRDMD", "KRGYO", "KRONT", "KRPLS", "KRSTL", "KRTEK", "KRVGD", "KSTUR", "KUTPO", "KUVVA", "KUYAS", "KZBGY", "KZGYO", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGO", "LRSHO", "LUKSK", "MAALT", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MEPET", "MERCN", "MERIT", "MERKO", "METRO", "METUR", "MHRGY", "MIATK", "MIPAZ", "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MPARK", "MRGYO", "MRSHL", "MSGYO", "MTRKS", "MTRYO", "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NTHOL", "NUGYO", "NUHCM", "OBAMS", "OBASE", "ODAS", "ONCSM", "ORCAY", "ORGE", "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZGYO", "OZKGY", "OZRDN", "OZSUB", "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATEK", "PCILT", "PEGYO", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", "PKART", "PKENT", "PLTUR", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRDGS", "PRKAB", "PRKME", "PRZMA", "PSGYO", "QUAGR", "RALYH", "RAYYS", "REEDR", "RNPOL", "RODRG", "RTALB", "RUBNS", "RYGYO", "RYSAS", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFM", "SANKO", "SARKY", "SASA", "SAYAS", "SDTTR", "SEKFK", "SEKUR", "SELEC", "SELGD", "SELVA", "SEYKM", "SILVR", "SISE", "SKBNK", "SKTAS", "SMART", "SMRTG", "SNGYO", "SNICA", "SNKPA", "SNPAM", "SOKE", "SOKM", "SONME", "SRVGY", "SUMAS", "SUNTK", "SURGY", "SUWEN", "TABGD", "TARKM", "TATEN", "TATGD", "TAVHL", "TBPUR", "TDGYO", "TEKTU", "TERA", "TETMT", "TFFRK", "TGSAS", "THYAO", "TIRE", "TKFEN", "TKNSA", "TMSN", "TOASO", "TRCAS", "TRGYO", "TRILC", "TSKB", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", "UFUK", "ULAS", "ULFA", "ULKER", "ULLY", "ULUFA", "ULUSE", "ULUYO", "UNLU", "USAK", "VAKBN", "VAKFN", "VAKKO", "VANGD", "VBTYO", "VERTU", "VERUS", "VESBE", "VESTL", "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBTAS", "YEOTK", "YESIL", "YGGYO", "YGYO", "YKBNK", "YKSLN", "YONGA", "YOTAS", "YUNSA", "YYLGD", "ZEDUR", "ZOREN", "ZRGYO"
-        ]
-
-    def whatsapp_rapor_gonder(self, mesaj):
-        """UltraMsg API kullanarak WhatsApp üzerinden bildirim gönderir."""
-        url = f"https://api.ultramsg.com/{INSTANCE_ID}/messages/chat"
-        payload = {"token": TOKEN, "to": TELEFON, "body": mesaj}
-        try:
-            response = requests.post(url, data=payload, timeout=15)
-            if response.status_code == 200:
-                print(f"\n[OK] WhatsApp bildirimi başarıyla gönderildi.")
-            else:
-                logging.error(f"WhatsApp API Hatası: {response.text}")
-        except Exception as e:
-            logging.error(f"WhatsApp Bağlantı Hatası: {e}")
-
-    def analiz_cekirdegi(self, sembol):
-        """Her bir hisse için disiplinli teknik ve temel analiz yapar."""
-        try:
-            # 1. Veri Çekme (Hata kontrollü)
-            ticker = yf.Ticker(sembol + self.suffix)
-            df = ticker.history(period="1y", interval="1d", auto_adjust=True)
-            
-            if df.empty or len(df) < 60:
-                return None
-
-            # 2. Teknik Analiz (pandas_ta)
-            df['RSI'] = ta.rsi(df['Close'], length=14)
-            st = ta.supertrend(df['High'], df['Low'], df['Close'], length=7, multiplier=3)
-            
-            # 3. Temel Veriler
-            info = ticker.info
-            fk = info.get('trailingPE', 0)
-            pddd = info.get('priceToBook', 0)
-
-            # Son satır verileri
-            son_fiyat = float(df['Close'].iloc[-1])
-            son_rsi = float(df['RSI'].iloc[-1])
-            trend_yonu = int(st['SUPERTd_7_3.0'].iloc[-1]) # 1: Al, -1: Sat
-
-            # --- DİSİPLİNLİ STRATEJİ KARARLARI ---
-            # Strateji 1: RSI Dip Dönüşü (Kısa Vade)
-            if son_rsi < 45 and trend_yonu == 1:
-                return f"📍 {sembol}\n💰 Fiyat: {son_fiyat:.2f} TL\n📊 RSI: {son_rsi:.1f} | FK: {fk:.1f}\n🎯 Vade: KISA VADE GÜÇLÜ AL\n"
-            
-            # Strateji 2: Güvenli Orta Vade (Ucuz ve Yükselişte)
-            elif 0 < fk < 15 and trend_yonu == 1:
-                return f"📍 {sembol}\n💰 Fiyat: {son_fiyat:.2f} TL\n📊 FK: {fk:.1f} | PDDD: {pddd:.1f}\n🎯 Vade: ORTA VADE GÜVENLİ\n"
-
-            return None
-        except Exception as e:
-            # Hata alan hisseyi logla ve geç
-            logging.error(f"Analiz Hatası ({sembol}): {str(e)}")
-            return None
-
-    def tara_ve_raporla(self):
-        """Tüm piyasayı süpürür ve raporu WhatsApp'a iletir."""
-        print(f"\n--- Piyasa Taraması Başladı: {datetime.now().strftime('%H:%M:%S')} ---")
-        bulunan_firsatlar = []
-        
-        sayac = 0
-        toplam = len(self.hisseler)
-
-        for h in self.hisseler:
-            sayac += 1
-            print(f"[{sayac}/{toplam}] İnceleniyor: {h}...", end="\r")
-            sonuc = self.analiz_cekirdegi(h)
-            if sonuc:
-                bulunan_firsatlar.append(sonuc)
-
-        if bulunan_firsatlar:
-            # Raporu parçalara böl (WhatsApp karakter sınırı için güvenli liman)
-            baslik = f"🚀 YAPAY ZEKA BORSA RAPORU ({datetime.now().strftime('%d/%m %H:%M')}) 🚀\n\n"
-            mesaj = baslik + "".join(bulunan_firsatlar[:20]) # İlk 20 fırsatı al
-            self.whatsapp_rapor_gonder(mesaj)
-            print(f"\n✅ {len(bulunan_firsatlar)} adet fırsat WhatsApp'a gönderildi.")
-        else:
-            print("\n❌ Şartlara uyan hiçbir fırsat bulunamadı.")
-
-    def disiplin_dongusu(self):
-        """7/24 Disiplinli Tarama Döngüsü."""
-        while True:
-            # Borsa çalışma saatleri kontrolü (Opsiyonel, şu an 7/24 açık)
-            self.tara_ve_raporla()
-            
-            bekleme_suresi = 1800 # 30 dakikada bir tarama yapar
-            print(f"\n🕒 Bir sonraki tarama 30 dakika sonra yapılacaktır.")
-            time.sleep(bekleme_suresi)
-
-# --- ANA PROGRAM BAŞLATICI ---
-if __name__ == "__main__":
+def db_yukle():
+    if not os.path.exists(DB_FILE): return {}
     try:
-        robot = BorsaTerminaliFinal()
-        robot.disiplin_dongusu()
-    except KeyboardInterrupt:
-        print("\n[!] Sistem kullanıcı tarafından kapatıldı.")
+        with open(DB_FILE, "r") as f: return json.load(f)
+    except: return {}
+
+def db_kaydet(db):
+    try:
+        with open(DB_FILE, "w") as f: json.dump(db, f)
     except Exception as e:
-        print(f"\n[FATAL HATA] Sistem çöktü: {e}")
-        logging.error(f"SİSTEM ÇÖKTÜ: {e}")
+        st.error(f"Veritabanı kayıt hatası: {e}")
+
+# --- 2. BİST-TÜM TAM LİSTE ---
+BIST_TICKERS = [
+        "A1CAP", "ACSEL", "ADEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", "AKBNK", 
+            "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKSA", "AKSEN", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", 
+            "ALGYO", "ALKA", "ALMAD", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ASELS", 
+            "ASTOR", "ASUZU", "ATATP", "AVGYO", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BANVT", "BARMA", "BASGZ", 
+            "BERA", "BEYAZ", "BFREN", "BIENP", "BIMAS", "BINHO", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BOBET", "BORLS", 
+            "BORSK", "BOSSA", "BRISA", "BRSAN", "BRYAT", "BTCIM", "BUCIM", "BURCE", "CANTE", "CATES", "CCOLA", "CELHA", 
+            "CEMTS", "CIMSA", "CLEBI", "CONSE", "CVKMD", "CWENE", "DAGI", "DAPGM", "DARDL", "DGGYO", "DGNMO", "DOAS", 
+            "DOHOL", "DOKTA", "DURDO", "DYOBY", "EBEBK", "ECILC", "ECZYT", "EDATA", "EGEEN", "EGGUB", "EGPRO", "EGSER", 
+            "EKGYO", "EKOS", "EKSUN", "ENERY", "ENJSA", "ENKAI", "ENTRA", "ERBOS", "EREGL", "ESCOM", "ESEN", "EUPWR", 
+            "EUREN", "EYGYO", "FADE", "FENER", "FLAP", "FROTO", "FZLGY", "GARAN", "GENIL", "GENTS", "GEREL", "GESAN", 
+            "GIPTA", "GLYHO", "GOLTS", "GOODY", "GOZDE", "GRSEL", "GSDHO", "GSRAY", "GUBRF", "GWIND", "HALKB", "HATEK", 
+            "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUNER", "HURGZ", "ICBCT", "IMASM", "INDES", "INFO", "INGRM", "INVEO", 
+            "INVES", "IPEKE", "ISCTR", "ISDMR", "ISFIN", "ISGYO", "ISMEN", "IZENR", "IZMDC", "JANTS", "KAREL", "KAYSE", 
+            "KCAER", "KCHOL", "KERVT", "KFEIN", "KLGYO", "KLMSN", "KLRHO", "KLSYN", "KNFRT", "KONTR", "KONYA", "KORDS", 
+            "KOZAA", "KOZAL", "KRDMD", "KRONT", "KRPLS", "KRVGD", "KUTPO", "KUYAS", "KZBGY", "LIDER", "LOGO", "MAALT", 
+            "MAGEN", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MERCN", "MIATK", "MIPAZ", "MNDRS", "MOBTL", "MPARK", "MRGYO", 
+            "MSGYO", "MTRKS", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NTHOL", "ODAS", "ONCSM", "ORGE", "OTKAR", "OYAKC", 
+            "OZKGY", "PAGYO", "PAPIL", "PARSN", "PASEU", "PATEK", "PCILT", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", 
+            "PGSUS", "REEDR", "SAHOL", "SASA", "SISE", "TCELL", "THYAO", "TOASO", "TUPRS", "YKBNK", "YEOTK"
+
+]
+
+# --- 3. ANALİZ MOTORU ---
+class SeniorEgitmenMotoru:
+    @staticmethod
+    def analiz_et(sembol, ticker_obj):
+        try:
+            # Bulut güvenliği için veri çekme denemesi
+            df = ticker_obj.history(period="1y", interval="1d", timeout=15)
+            info = ticker_obj.info
+            
+            if df is None or df.empty or len(df) < 30: return None
+            
+            # İndikatör Hesaplamaları
+            df['RSI'] = ta.rsi(df['Close'], length=14)
+            df['MFI'] = ta.mfi(df['High'], df['Low'], df['Close'], df['Volume'], length=14)
+            df['ATR'] = ta.atr(df['High'], df['Low'], df['Close'], length=14)
+            adx_df = ta.adx(df['High'], df['Low'], df['Close'], length=14)
+            
+            last = df.iloc[-1]
+            fiyat = last['Close']
+            pddd = info.get('priceToBook', 0)
+            rsi = last['RSI']
+            adx = adx_df.iloc[-1]['ADX_14']
+            
+            # Eğitim Notları
+            notlar = [
+                f"🟢 **RSI ({rsi:.0f}):** Momentum göstergesi. 30 altı ucuz, 70 üstü şişkin.",
+                f"💰 **MFI ({last['MFI']:.0f}):** Hacimli para girişi onayı.",
+                f"📈 **ADX ({adx:.0f}):** Trend gücü (25+ kararlı trend).",
+                f"🏦 **PD/DD ({pddd:.2f}):** Hasan Bey'in 1.5 kuralı testi."
+            ]
+            
+            durum = "✅ FIRSAT / ALIM" if pddd <= 1.5 else "⚠️ RİSKLİ / PAHALI"
+            vade = "ORTA VADE" if adx > 25 else "KISA VADE (TEPKİ)"
+            
+            alim_seviyesi = round(fiyat * 0.97, 2)
+            satis_hedefi = round(fiyat + (last['ATR'] * 3), 2)
+            
+            rapor = "  \n".join(notlar)
+            final_metin = (f"{rapor}  \n\n🎯 **STRATEJİK YORUM:** {sembol} şu an **{durum}** kategorisinde. "
+                          f"İdeal **alım: {alim_seviyesi} TL**, **hedef: {satis_hedefi} TL**. "
+                          f"Strateji: **{vade}**.")
+
+            return {
+                "Hisse": sembol, "Fiyat": f"{fiyat:.2f}", "Vade": vade, 
+                "Al": alim_seviyesi, "Sat": satis_hedefi, "Durum": durum, 
+                "Rapor": final_metin, "PD/DD": f"{pddd:.2f}"
+            }
+        except:
+            return None
+
+# --- 4. ARAYÜZ VE SİSTEM ---
+st.set_page_config(page_title="BIST Master Terminal V4", layout="wide")
+db = db_yukle()
+
+if 'auth' not in st.session_state: st.session_state.auth = False
+
+if not st.session_state.auth:
+    st.title("🛡️ BIST Master Terminal - Giriş & Kayıt")
+    tab1, tab2 = st.tabs(["Giriş Yap", "Yeni Kayıt"])
+    
+    with tab1:
+        u_name = st.text_input("Kullanıcı Adı")
+        u_pass = st.text_input("Şifre", type="password")
+        if st.button("Sisteme Giriş"):
+            if u_name in db and db[u_name]['sifre'] == sifrele(u_pass):
+                st.session_state.auth = True; st.session_state.user = u_name; st.rerun()
+            else: st.error("Hatalı Giriş!")
+            
+    with tab2:
+        new_u = st.text_input("Yeni Kullanıcı")
+        new_p = st.text_input("Yeni Şifre", type="password")
+        if st.button("Kayıt Ol"):
+            if new_u in db: st.warning("Bu kullanıcı zaten var.")
+            else:
+                db[new_u] = {"sifre": sifrele(new_p), "liste": ["ESEN", "MERCN"]}
+                db_kaydet(db); st.success("Kayıt Başarılı!")
+else:
+    # ANA PANEL
+    user = st.session_state.user
+    st.sidebar.title(f"👤 Merhaba {user.upper()}")
+    
+    kayitli_liste = db[user].get('liste', ["ESEN", "MERCN"])
+    secilenler = st.sidebar.multiselect("Hisseleri Seçin:", options=BIST_TICKERS, default=kayitli_liste)
+    
+    if st.sidebar.button("💾 LİSTEMİ KAYDET"):
+        db[user]['liste'] = secilenler
+        db_kaydet(db); st.sidebar.success("Listeniz kaydedildi!")
+
+    if st.sidebar.button("🚪 Çıkış"):
+        st.session_state.auth = False; st.rerun()
+
+    st.title(f"📈 {user.upper()} Stratejik Analiz Paneli")
+    if st.button(f"🚀 {len(secilenler)} Hisseyi Eğitici Analizle Tara"):
+        results = []
+        bar = st.progress(0)
+        for i, s in enumerate(secilenler):
+            ticker_obj = yf.Ticker(f"{s}.IS")
+            res = SeniorEgitmenMotoru.analiz_et(s, ticker_obj)
+            if res: results.append(res)
+            bar.progress((i+1)/len(secilenler))
+        
+        if results:
+            st.table(pd.DataFrame(results).drop(columns=["Rapor"]))
+            st.markdown("---")
+            st.subheader("📝 Robotun Doyurucu ve Eğitici Raporları")
+            for r in results:
+                with st.expander(f"📌 {r['Hisse']} - Neden Bu Kararı Verdim?"):
+                    st.info(r['Rapor'])
+        else:
+            st.warning("Seçilen hisseler için veri çekilemedi. Lütfen biraz sonra tekrar deneyin.")

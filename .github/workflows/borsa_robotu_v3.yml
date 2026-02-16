@@ -1,34 +1,37 @@
-name: Borsa V3 Otomatik Tarama
+name: Borsa V3 Stratejik Analiz
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
-  workflow_dispatch:
+    # Türkiye saatine (UTC+3) göre mühürlenmiş 4 seans vakti
+    - cron: '50 06 * * 1-5'  # 09:50 TSİ (Sabah Hazırlık)
+    - cron: '00 10 * * 1-5'  # 13:00 TSİ (Öğle Analizi)
+    - cron: '30 14 * * 1-5'  # 17:30 TSİ (Seans Sonu Fırsatları)
+    - cron: '15 15 * * 1-5'  # 18:15 TSİ (Kapanış Onayı)
+  workflow_dispatch:        # Telefonundan "Run Workflow" diyerek manuel tetikleme sağlar
 
 jobs:
   run_analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # SÜRE SINIRI 60 DAKİKAYA ÇIKARILDI (15 dakika yetmiyordu)
+    timeout-minutes: 60 
 
     steps:
       - name: 📂 Proje Kodlarını Çek
         uses: actions/checkout@v4
 
-      - name: 🐍 Python Ortamını Kur (Güncel Sürüm)
+      - name: 🐍 Python Ortamını Kur
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Sürümü 3.12'ye yükselttik
+          python-version: '3.12'
 
       - name: 🛠️ Kütüphaneleri Yükle
         run: |
           python -m pip install --upgrade pip
-          pip install pandas yfinance requests numpy
-          # En sorunsuz kurulum yöntemi:
-          pip install pandas-ta
+          pip install pandas yfinance requests numpy pandas-ta
 
       - name: 🤖 Robotu Ateşle
+        # BURASI ÖNEMLİ: ana_kontrol.py içinde döngü (while True) olmamalı!
         run: python BORSA_ROBOTU_V3/ana_kontrol.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
