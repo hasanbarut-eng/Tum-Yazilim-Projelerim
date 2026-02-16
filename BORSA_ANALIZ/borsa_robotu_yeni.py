@@ -8,22 +8,22 @@ import sys
 import time
 import html
 
-# --- LOG AYARI ---
+# --- LOG AYARI (Üretim Seviyesi) ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
 class BorsaAnalizMasterV11VIP:
     def __init__(self):
-        # GitHub Secrets mühürleri
+        # GitHub Secrets'tan mühürlü verileri çek
         self.TOKEN = os.getenv('TELEGRAM_TOKEN') 
         self.CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
         self.hisseler = self.bist_aktif_liste_getir()
 
     def bist_aktif_liste_getir(self):
-        """Hatalı sembollerden arındırılmış, Yahoo uyumlu VIP liste"""
+        """Hata veren sembollerden arındırılmış, Yahoo uyumlu VIP havuz"""
         return [
             "A1CAP", "ADEL", "ADESE", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ",
             "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKSA", "AKSEN", "ALARK", "ALBRK", 
-            "ALCAR", "ALCTL", "ALFas", "ALGYO", "ALKA", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", 
+            "ALCAR", "ALCTL", "ALFAS", "ALGYO", "ALKA", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", 
             "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ASELS", "ASTOR", "ASUZU", "ATATP", "AVGYO", "AYDEM", 
             "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BANVT", "BARMA", "BASGZ", "BERA", "BEYAZ", "BFREN", 
             "BIMAS", "BINHO", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BOBET", "BORLS", "BORSK", "BOSSA", 
@@ -47,7 +47,7 @@ class BorsaAnalizMasterV11VIP:
         ]
 
     def analiz_yap(self):
-        logging.info("🚀 VIP %95 Süzgeci Başlatıldı...")
+        logging.info("🚀 VIP %95 Süzgeci Ateşlendi...")
         for h in self.hisseler:
             try:
                 ticker = yf.Ticker(f"{h}.IS")
@@ -57,7 +57,7 @@ class BorsaAnalizMasterV11VIP:
                 df = ticker.history(period="1y", interval="1d", auto_adjust=True)
                 if df is None or df.empty or len(df) < 200: continue
 
-                # Teknik Hesaplamalar
+                # --- TEKNİK ANALİZ ---
                 df['RSI'] = ta.rsi(df['Close'], length=14)
                 df['SMA5'] = ta.sma(df['Close'], length=5)
                 df['SMA20'] = ta.sma(df['Close'], length=20)
@@ -72,22 +72,23 @@ class BorsaAnalizMasterV11VIP:
                 h_ort = df['Volume'].rolling(10).mean().iloc[-1]
                 h_son = df['Volume'].iloc[-1]
 
-                # --- VIP SKORLAMA (95 PUAN BARAJI) ---
+                # --- VIP SKORLAMA (BAŞARI BARAJI: %95) ---
                 skor = 0
                 
-                # 1. Agresif Hacim (3 Kat Şartı) -> 40 Puan
+                # 1. Kriter: 3 Kat Hacim Patlaması (Olmazsa Olmaz) -> 40 Puan
                 if h_son > (h_ort * 3.0): skor += 40
                 
-                # 2. RSI VIP Bölge (55-68 Arası) -> 30 Puan
+                # 2. Kriter: RSI Güç Bölgesi (55-68 Arası) -> 30 Puan
                 if 55 <= rsi <= 68: skor += 30
                 elif 40 <= rsi < 55: skor += 15
                 
-                # 3. SMA Cross Onayı (SMA5 > SMA20) -> 20 Puan
+                # 3. Kriter: Trend Kesişim Onayı (SMA5 > SMA20) -> 20 Puan
                 if fiyat > sma20 and sma5 > sma20: skor += 20
                 
-                # 4. Temel Analiz İskontosu (PD/DD < 1.2) -> 10 Puan
-                if pddd < 1.2: skor += 10
+                # 4. Kriter: Temel İskonto (PD/DD < 1.15) -> 10 Puan
+                if pddd < 1.15: skor += 10
 
+                # SADECE %95 VE ÜSTÜ (ŞAMPİYONLAR)
                 if skor >= 95:
                     self.telegram_v11_gonder(h, fiyat, skor, rsi, sma200, pddd)
                 
@@ -95,13 +96,14 @@ class BorsaAnalizMasterV11VIP:
             except Exception: continue
 
     def telegram_v11_gonder(self, kod, fiyat, skor, rsi, s200, pddd):
+        # --- 🎓 VIP ANALİZ METNİ (6 CÜMLE) ---
         analiz_metni = (
             f"#{kod} hissesi VIP %{skor} skorla Şampiyonlar Ligi'ne mühürlenmiştir. "
             f"Matematiksel modelimiz bu hisseyi KISA VADE (AGRESİF HACİM 🚀) kategorisinde sınıflandırmıştır. "
             f"Hisse {round(pddd,2)} PD/DD oranıyla temel anlamda iskontolu olup, hacimdeki 3 katlık patlama akıllı paranın girişini teyit etmektedir. "
             f"RSI indikatörünün {round(rsi,1)} seviyesinde olması momentumun tam güç bölgesinde olduğunu kanıtlıyor. "
             f"Fiyatın {round(s200,2)} (SMA200) kalesi üzerindeki seyri ana trendin boğa olduğunu mühürlemektedir. "
-            f"Eğitim disiplini gereği, hacim onayı veren bu kağıt yakından takip edilmeli ve stop kurallarına sadık kalınmalıdır."
+            f"Hacim onayı veren bu elmas, stratejik olarak yakından takip edilmeli ve stop kurallarına sadık kalınmalıdır."
         )
 
         msg = f"🏆 <b>VIP MASTER: ŞAMPİYONLAR LİGİ</b> 🏆\n"
