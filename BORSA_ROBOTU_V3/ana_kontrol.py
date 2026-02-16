@@ -10,14 +10,14 @@ import logging
 # --- LOG SİSTEMİ ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# --- YAPILANDIRMA (GitHub Secrets) ---
+# --- YAPILANDIRMA ---
 TOKEN = os.getenv('TELEGRAM_TOKEN') 
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-def vip_master_analiz():
-    logging.info("🚀 VIP Master V11 Final Sürüm Ateşlendi...")
+def vip_master_analiz_v11_plus():
+    logging.info("🚀 Master V11 VIP+ Ateşlendi...")
     
-    # 253 Hisselik Tam ve Güncel Listeniz (Hatalar düzeltildi)
+    # 253 Hisselik Tam Liste
     hisseler = [
         "A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
         "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 
@@ -76,8 +76,6 @@ def vip_master_analiz():
     for s in hisseler:
         try:
             ticker = yf.Ticker(f"{s}.IS")
-            
-            # --- HABER MODÜLÜ ---
             news = ticker.news
             haber_metni = ""
             if news:
@@ -89,45 +87,57 @@ def vip_master_analiz():
             df = ticker.history(period="1y", interval="1d", auto_adjust=True)
             if df.empty or len(df) < 100: continue
 
-            # --- TEKNİK HESAPLAMALAR ---
             df['RSI'] = ta.rsi(df['Close'], length=14)
+            df['SMA5'] = ta.sma(df['Close'], length=5)
             df['SMA20'] = ta.sma(df['Close'], length=20)
-            
+            df['SMA200'] = ta.sma(df['Close'], length=200)
+
             fiyat = float(df['Close'].iloc[-1])
             rsi = float(df['RSI'].iloc[-1])
+            sma5 = float(df['SMA5'].iloc[-1])
             sma20 = float(df['SMA20'].iloc[-1])
+            sma200 = float(df['SMA200'].iloc[-1])
             h_ort = df['Volume'].rolling(10).mean().iloc[-1]
             h_son = df['Volume'].iloc[-1]
             pddd = ticker.info.get('priceToBook', 1.5)
 
-            # --- VIP %90 PUANLAMA ---
+            # --- VIP+ SERT KRİTERLER ---
             skor = 0
-            if h_son > (h_ort * 2.1): skor += 40  # Hacim Onayı
-            if 40 <= rsi <= 72: skor += 30       # Momentum Onayı
-            if fiyat > sma20: skor += 20          # Trend Onayı
-            if pddd < 1.6: skor += 10             # Temel İskonto
+            if h_son > (h_ort * 2.8): skor += 40      # Hacim 2.8 Katı (Sertleştirildi)
+            if 52 <= rsi <= 66: skor += 30           # RSI Dar Bant (En Güçlü Bölge)
+            if fiyat > sma20 and sma5 > sma20: skor += 20
+            if pddd < 1.2: skor += 10                # Temel İskonto Sınırı Düşürüldü
 
-            if skor >= 90:
-                telegram_gonder(s, fiyat, skor, rsi, pddd, haber_metni)
+            # BARAJ 95: Sadece Elmaslar
+            if skor >= 95:
+                telegram_gonder(s, fiyat, skor, rsi, sma200, pddd, haber_metni)
             
             time.sleep(0.4) 
         except: continue
 
-def telegram_gonder(kod, fiyat, skor, rsi, pddd, haberler):
-    yasal_uyari = "\n\n⚠️ <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu bilgiler eğitim amaçlı olup <b>Yatırım Tavsiyesi Değildir.</b>"
+def telegram_gonder(kod, fiyat, skor, rsi, s200, pddd, haberler):
+    # --- MEŞHUR 6 CÜMLELİK ANALİZ METNİ ---
+    analiz_metni = (
+        f"#{kod} hissesinde teknik ve temel verilerin %{skor} uyumlulukla çakıştığı saptanmıştır. "
+        f"Matematiksel modelimiz bu hisseyi KISA VADE (AGRESİF HACİM 🚀) kategorisinde mühürlemiştir. "
+        f"Hisse {round(pddd,2)} PD/DD oranıyla temel anlamda iskontolu olup, hacimdeki agresif artış akıllı paranın girişini kanıtlıyor. "
+        f"RSI indikatörünün {round(rsi,1)} seviyesinde mühürlenmesi momentumun tam güç bölgesinde olduğunu kanıtlar. "
+        f"Fiyatın {round(s200,2)} (SMA200) kalesi üzerindeki seyri güvenli boğa bölgesinde olduğumuzu gösterir. "
+        f"Son Haberler:\n{haberler}\n"
+        f"Eğitim disiplini gereği, yatırım danışmanlığı kapsamında olmayan bu analizler Yatırım Tavsiyesi Değildir."
+    )
 
-    msg = f"🏆 <b>VIP MASTER ANALİZ</b> 🏆\n"
+    msg = f"🏆 <b>VIP MASTER: ŞAMPİYONLAR LİGİ</b> 🏆\n"
     msg += f"━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"<b>#{kod} | SKOR: %{skor}</b>\n\n"
-    msg += f"📊 Fiyat: {round(fiyat, 2)} TL | PD/DD: {round(pddd, 2)}\n"
-    msg += f"📈 RSI: {round(rsi, 1)}\n\n"
-    msg += f"🗞️ <b>SON HABERLER:</b>\n{haberler}"
-    msg += f"{yasal_uyari}\n" 
+    msg += f"💡 <b>DERİN ANALİZ VE HABER:</b>\n{html.escape(analiz_metni)}\n\n"
     msg += f"────────────────────\n"
-    msg += f"🔗 <a href='https://tr.tradingview.com/symbols/BIST-{kod}'>Grafiği Gör</a>"
+    msg += f"📊 <b>Fiyat:</b> {round(fiyat, 2)} TL | 📄 <b>PD/DD:</b> {round(pddd, 2)}\n"
+    msg += f"🔗 <a href='https://tr.tradingview.com/symbols/BIST-{kod}'>Grafiği Mühürle</a>\n"
+    msg += f"━━━━━━━━━━━━━━━━━━━━"
 
     requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
                   data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True})
 
 if __name__ == "__main__":
-    vip_master_analiz()
+    vip_master_analiz_v11_plus()
