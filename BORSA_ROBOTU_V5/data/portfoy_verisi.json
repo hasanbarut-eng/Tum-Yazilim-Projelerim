@@ -1,0 +1,27 @@
+{
+    "sermaye_gecmisi": [
+        {
+            "miktar": 1667462.29,
+            "aciklama": "Nakit giriş",
+            "tarih": "2026-02-12 01:00"
+        }
+    ],
+    "aktif_hisseler": {
+        "ESEN": {
+            "lot": 148974,
+            "maliyet": 11.190041962499999
+        },
+        "FRIGO": {
+            "lot": 0,
+            "maliyet": 0
+        }
+    },
+    "kapanmis_zararlar": 0.0,
+    "bankalar": {
+        "Ziraat": 0.002,
+        "Garanti": 0.0015,
+        "Osmanlı Bankası": 3.75e-06,
+        "Osmanlı": 3.75e-06
+    },
+    "islem_gecmisi": []
+}
