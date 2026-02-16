@@ -2,17 +2,17 @@ name: Borsa V3 Stratejik Analiz
 
 on:
   schedule:
-    # Türkiye saatine (UTC+3) göre ayarlanmış 5 seans vakti:
-    - cron: '30 06 * * 1-5'  # 09:30 TSİ (Açılış Hazırlık)
-    - cron: '15 07 * * 1-5'  # 10:15 TSİ (İlk Seans Analizi)
-    - cron: '00 10 * * 1-5'  # 13:00 TSİ (Öğle Arası Değerlendirme)
-    - cron: '30 14 * * 1-5'  # 17:30 TSİ (Kapanış Öncesi Fırsatlar)
-    - cron: '20 15 * * 1-5'  # 18:20 TSİ (Kapanış Kesin Onayı)
-  workflow_dispatch:         # Manuel çalıştırma butonu
+    # Türkiye saatine (UTC+3) göre mühürlenmiş 4 seans vakti
+    - cron: '50 06 * * 1-5'  # 09:50 TSİ (Sabah Hazırlık)
+    - cron: '00 10 * * 1-5'  # 13:00 TSİ (Öğle Analizi)
+    - cron: '30 14 * * 1-5'  # 17:30 TSİ (Seans Sonu Fırsatları)
+    - cron: '15 15 * * 1-5'  # 18:15 TSİ (Kapanış Onayı)
+  workflow_dispatch:        # Telefonundan "Run Workflow" diyerek manuel tetikleme sağlar
 
 jobs:
   run_analysis:
     runs-on: ubuntu-latest
+    # SÜRE SINIRI 60 DAKİKAYA ÇIKARILDI (15 dakika yetmiyordu)
     timeout-minutes: 60 
 
     steps:
@@ -30,8 +30,8 @@ jobs:
           pip install pandas yfinance requests numpy pandas-ta
 
       - name: 🤖 Robotu Ateşle
-        # Dosya adı borsa_robotu_yeni.py olarak mühürlendi
-        run: python borsa_robotu_yeni.py
+        # BURASI ÖNEMLİ: ana_kontrol.py içinde döngü (while True) olmamalı!
+        run: python BORSA_ROBOTU_V3/ana_kontrol.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
