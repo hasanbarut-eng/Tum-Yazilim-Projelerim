@@ -1,151 +1,162 @@
-# -*- coding: utf-8 -*-
-"""
-ANA DOSYA: Borsa_Terminali_V3.py (Final Mühürlü Sürüm)
-GÖREV: Sadeleştirilmiş 4 Maddelik Stratejik Analiz Motoru
-YAZILIM STANDARTI: Senior Developer (Hata Yakalama ve Tam Entegrasyon)
-"""
-
 import streamlit as st
 import pandas as pd
 import yfinance as yf
 import pandas_ta as ta
-import time
-import os
 import json
+import os
+import hashlib
+import time
 from datetime import datetime
 
-# --- 1. SİSTEM YAPILANDIRMASI ---
-class BarutConfig:
-    DB_FILE = "users_db.json"
-    # Senin strateji anayasan
-    RULES = {
-        "FDO_ALT": 20.0,
-        "FDO_UST": 35.0,
-        "HACIM_SOKU": 2.0,
-        "PD_DD_SINIR": 1.5
-    }
+# --- 1. GÜVENLİK VE VERİ YÖNETİMİ ---
+DB_FILE = "users_db.json"
+
+def sifrele(s): 
+    return hashlib.sha256(str.encode(s)).hexdigest()
 
 def db_yukle():
-    if not os.path.exists(BarutConfig.DB_FILE): return {}
+    if not os.path.exists(DB_FILE): return {}
     try:
-        with open(BarutConfig.DB_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
+        with open(DB_FILE, "r") as f: return json.load(f)
+    except: return {}
 
 def db_kaydet(db):
     try:
-        with open(BarutConfig.DB_FILE, "w", encoding="utf-8") as f:
-            json.dump(db, f, ensure_ascii=False, indent=4)
+        with open(DB_FILE, "w") as f: json.dump(db, f)
     except Exception as e:
-        st.error(f"Kayıt Hatası: {e}")
+        st.error(f"Veritabanı kayıt hatası: {e}")
 
-# --- 2. SENİOR ANALİZ MOTORU ---
-class SeniorAnalizMotoru:
+# --- 2. BİST-TÜM TAM LİSTE ---
+BIST_TICKERS = [
+        "A1CAP", "ACSEL", "ADEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", "AKBNK", 
+            "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKSA", "AKSEN", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", 
+            "ALGYO", "ALKA", "ALMAD", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ASELS", 
+            "ASTOR", "ASUZU", "ATATP", "AVGYO", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BANVT", "BARMA", "BASGZ", 
+            "BERA", "BEYAZ", "BFREN", "BIENP", "BIMAS", "BINHO", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BOBET", "BORLS", 
+            "BORSK", "BOSSA", "BRISA", "BRSAN", "BRYAT", "BTCIM", "BUCIM", "BURCE", "CANTE", "CATES", "CCOLA", "CELHA", 
+            "CEMTS", "CIMSA", "CLEBI", "CONSE", "CVKMD", "CWENE", "DAGI", "DAPGM", "DARDL", "DGGYO", "DGNMO", "DOAS", 
+            "DOHOL", "DOKTA", "DURDO", "DYOBY", "EBEBK", "ECILC", "ECZYT", "EDATA", "EGEEN", "EGGUB", "EGPRO", "EGSER", 
+            "EKGYO", "EKOS", "EKSUN", "ENERY", "ENJSA", "ENKAI", "ENTRA", "ERBOS", "EREGL", "ESCOM", "ESEN", "EUPWR", 
+            "EUREN", "EYGYO", "FADE", "FENER", "FLAP", "FROTO", "FZLGY", "GARAN", "GENIL", "GENTS", "GEREL", "GESAN", 
+            "GIPTA", "GLYHO", "GOLTS", "GOODY", "GOZDE", "GRSEL", "GSDHO", "GSRAY", "GUBRF", "GWIND", "HALKB", "HATEK", 
+            "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUNER", "HURGZ", "ICBCT", "IMASM", "INDES", "INFO", "INGRM", "INVEO", 
+            "INVES", "IPEKE", "ISCTR", "ISDMR", "ISFIN", "ISGYO", "ISMEN", "IZENR", "IZMDC", "JANTS", "KAREL", "KAYSE", 
+            "KCAER", "KCHOL", "KERVT", "KFEIN", "KLGYO", "KLMSN", "KLRHO", "KLSYN", "KNFRT", "KONTR", "KONYA", "KORDS", 
+            "KOZAA", "KOZAL", "KRDMD", "KRONT", "KRPLS", "KRVGD", "KUTPO", "KUYAS", "KZBGY", "LIDER", "LOGO", "MAALT", 
+            "MAGEN", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MERCN", "MIATK", "MIPAZ", "MNDRS", "MOBTL", "MPARK", "MRGYO", 
+            "MSGYO", "MTRKS", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NTHOL", "ODAS", "ONCSM", "ORGE", "OTKAR", "OYAKC", 
+            "OZKGY", "PAGYO", "PAPIL", "PARSN", "PASEU", "PATEK", "PCILT", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", 
+            "PGSUS", "REEDR", "SAHOL", "SASA", "SISE", "TCELL", "THYAO", "TOASO", "TUPRS", "YKBNK", "YEOTK"
+
+]
+
+# --- 3. ANALİZ MOTORU ---
+class SeniorEgitmenMotoru:
     @staticmethod
-    def analiz_et(sembol):
-        """
-        Verileri çeker, hesaplar ve terimlerden arındırılmış 4 maddelik özet üretir.
-        """
+    def analiz_et(sembol, ticker_obj):
         try:
-            ticker = yf.Ticker(f"{sembol}.IS")
-            # Rate limit ve 'gitmeme' sorununu önlemek için timeout mühürlendi
-            df = ticker.history(period="1y", interval="1d", timeout=15)
+            # Bulut güvenliği için veri çekme denemesi
+            df = ticker_obj.history(period="1y", interval="1d", timeout=15)
+            info = ticker_obj.info
             
-            if df is None or df.empty or len(df) < 30:
-                return None
+            if df is None or df.empty or len(df) < 30: return None
             
-            info = ticker.info
+            # İndikatör Hesaplamaları
+            df['RSI'] = ta.rsi(df['Close'], length=14)
+            df['MFI'] = ta.mfi(df['High'], df['Low'], df['Close'], df['Volume'], length=14)
+            df['ATR'] = ta.atr(df['High'], df['Low'], df['Close'], length=14)
+            adx_df = ta.adx(df['High'], df['Low'], df['Close'], length=14)
+            
             last = df.iloc[-1]
             fiyat = last['Close']
+            pddd = info.get('priceToBook', 0)
+            rsi = last['RSI']
+            adx = adx_df.iloc[-1]['ADX_14']
             
-            # Stratejik Veri Hesaplamaları
-            pddd = info.get('priceToBook', 0) or 0
-            total_shares = info.get('sharesOutstanding', 1)
-            float_shares = info.get('floatShares', 0)
-            fdo = (float_shares / total_shares) * 100 if total_shares > 0 else 0
+            # Eğitim Notları
+            notlar = [
+                f"🟢 **RSI ({rsi:.0f}):** Momentum göstergesi. 30 altı ucuz, 70 üstü şişkin.",
+                f"💰 **MFI ({last['MFI']:.0f}):** Hacimli para girişi onayı.",
+                f"📈 **ADX ({adx:.0f}):** Trend gücü (25+ kararlı trend).",
+                f"🏦 **PD/DD ({pddd:.2f}):** Hasan Bey'in 1.5 kuralı testi."
+            ]
             
-            avg_volume = df['Volume'].tail(5).mean()
-            hacim_soku = last['Volume'] / avg_volume if avg_volume > 0 else 1.0
-
-            # Kategori Belirleme
-            if BarutConfig.RULES["FDO_ALT"] <= fdo <= BarutConfig.RULES["FDO_UST"] and hacim_soku >= BarutConfig.RULES["HACIM_SOKU"]:
-                kategori = "🔥 Hızlı Yükseliş Adayı"
-            elif BarutConfig.RULES["FDO_ALT"] <= fdo <= BarutConfig.RULES["FDO_UST"]:
-                kategori = "💎 Değerli ve Sessiz"
-            elif fdo > 50:
-                kategori = "🏛 Güvenli ve Büyük"
-            else:
-                kategori = "✅ Standart Takip"
-
-            # TAM İSTEDİĞİN O EN SADE 4 MADDELİK ÖZET
-            rapor = (
-                f"1. **Piyasa Durumu:** {sembol} şu an piyasada az bulunan ve yoğun ilgi gören bir yapıda olduğu için fiyatı hızlı hareket edebilir.\n"
-                f"2. **Fiyat Güvenliği:** Hissenin şu anki fiyatı, sahip olduğu mal varlıklarına göre oldukça indirimli seviyelerde, yani ucuz bölgedeyiz.\n"
-                f"3. **Enerji Onayı:** Bugün hisseye normalden çok daha fazla taze para girişi olmuş; bu güç fiyatı ileri taşıyacak asıl motordur.\n"
-                f"4. **Strateji:** Hisse teknik olarak doğru yolda ilerliyor ancak hızlı koşup yorulabileceği için kârı görünce cebinize koyup kenara çekilmek en mantıklı hamledir."
-            )
+            durum = "✅ FIRSAT / ALIM" if pddd <= 1.5 else "⚠️ RİSKLİ / PAHALI"
+            vade = "ORTA VADE" if adx > 25 else "KISA VADE (TEPKİ)"
+            
+            alim_seviyesi = round(fiyat * 0.97, 2)
+            satis_hedefi = round(fiyat + (last['ATR'] * 3), 2)
+            
+            rapor = "  \n".join(notlar)
+            final_metin = (f"{rapor}  \n\n🎯 **STRATEJİK YORUM:** {sembol} şu an **{durum}** kategorisinde. "
+                          f"İdeal **alım: {alim_seviyesi} TL**, **hedef: {satis_hedefi} TL**. "
+                          f"Strateji: **{vade}**.")
 
             return {
-                "Hisse": sembol, 
-                "Fiyat": f"{fiyat:.2f} TL", 
-                "Karakter": kategori,
-                "Durum": "✅ Makul" if pddd <= 1.5 and pddd > 0 else "⚠️ Pahalı",
-                "Rapor": rapor
+                "Hisse": sembol, "Fiyat": f"{fiyat:.2f}", "Vade": vade, 
+                "Al": alim_seviyesi, "Sat": satis_hedefi, "Durum": durum, 
+                "Rapor": final_metin, "PD/DD": f"{pddd:.2f}"
             }
-        except Exception:
+        except:
             return None
 
-# --- 3. STREAMLİT ARAYÜZÜ ---
-st.set_page_config(page_title="BARUT Master V3", layout="wide")
-
-# Sistem Başlatma
+# --- 4. ARAYÜZ VE SİSTEM ---
+st.set_page_config(page_title="BIST Master Terminal V4", layout="wide")
 db = db_yukle()
+
 if 'auth' not in st.session_state: st.session_state.auth = False
 
-# Giriş Ekranı (Basitleştirilmiş)
 if not st.session_state.auth:
-    st.title("🛡️ BARUT Terminal Girişi")
-    u_name = st.text_input("Kullanıcı")
-    u_pass = st.text_input("Şifre", type="password")
-    if st.button("Giriş Yap"):
-        # Şimdilik basit kontrol, db entegrasyonu hazır
-        st.session_state.auth = True
-        st.rerun()
+    st.title("🛡️ BIST Master Terminal - Giriş & Kayıt")
+    tab1, tab2 = st.tabs(["Giriş Yap", "Yeni Kayıt"])
+    
+    with tab1:
+        u_name = st.text_input("Kullanıcı Adı")
+        u_pass = st.text_input("Şifre", type="password")
+        if st.button("Sisteme Giriş"):
+            if u_name in db and db[u_name]['sifre'] == sifrele(u_pass):
+                st.session_state.auth = True; st.session_state.user = u_name; st.rerun()
+            else: st.error("Hatalı Giriş!")
+            
+    with tab2:
+        new_u = st.text_input("Yeni Kullanıcı")
+        new_p = st.text_input("Yeni Şifre", type="password")
+        if st.button("Kayıt Ol"):
+            if new_u in db: st.warning("Bu kullanıcı zaten var.")
+            else:
+                db[new_u] = {"sifre": sifrele(new_p), "liste": ["ESEN", "MERCN"]}
+                db_kaydet(db); st.success("Kayıt Başarılı!")
 else:
-    st.title("📈 BIST Stratejik Analiz Terminali")
-    st.markdown("---")
+    # ANA PANEL
+    user = st.session_state.user
+    st.sidebar.title(f"👤 Merhaba {user.upper()}")
+    
+    kayitli_liste = db[user].get('liste', ["ESEN", "MERCN"])
+    secilenler = st.sidebar.multiselect("Hisseleri Seçin:", options=BIST_TICKERS, default=kayitli_liste)
+    
+    if st.sidebar.button("💾 LİSTEMİ KAYDET"):
+        db[user]['liste'] = secilenler
+        db_kaydet(db); st.sidebar.success("Listeniz kaydedildi!")
 
-    # BIST Listesi
-    BIST_TICKERS = ["ESEN", "THYAO", "ADEL", "AKBNK", "SASA", "EREGL", "ASELS", "TUPRS", "YKBNK", "MERCN"]
-    secilenler = st.sidebar.multiselect("Hisseleri Seçin:", BIST_TICKERS, default=["ESEN"])
+    if st.sidebar.button("🚪 Çıkış"):
+        st.session_state.auth = False; st.rerun()
 
-    if st.button(f"🔍 {len(secilenler)} Hisseyi Analiz Et"):
+    st.title(f"📈 {user.upper()} Stratejik Analiz Paneli")
+    if st.button(f"🚀 {len(secilenler)} Hisseyi Eğitici Analizle Tara"):
         results = []
-        progress_bar = st.progress(0)
-        
+        bar = st.progress(0)
         for i, s in enumerate(secilenler):
-            with st.spinner(f"{s} hesaplanıyor..."):
-                res = SeniorAnalizMotoru.analiz_et(s)
-                if res:
-                    results.append(res)
-            
-            # Rate limit engelini aşmak için bekleme (Gitmeme sorununu çözer)
-            if (i + 1) % 3 == 0: time.sleep(1.2)
-            progress_bar.progress((i + 1) / len(secilenler))
-
+            ticker_obj = yf.Ticker(f"{s}.IS")
+            res = SeniorEgitmenMotoru.analiz_et(s, ticker_obj)
+            if res: results.append(res)
+            bar.progress((i+1)/len(secilenler))
+        
         if results:
-            # Özet Tablo
             st.table(pd.DataFrame(results).drop(columns=["Rapor"]))
-            
             st.markdown("---")
-            # 4 Maddelik Doyurucu Raporlar
+            st.subheader("📝 Robotun Doyurucu ve Eğitici Raporları")
             for r in results:
-                with st.expander(f"📌 {r['Hisse']} - Neler Oluyor?"):
-                    st.markdown(r['Rapor'])
+                with st.expander(f"📌 {r['Hisse']} - Neden Bu Kararı Verdim?"):
+                    st.info(r['Rapor'])
         else:
-            st.error("Veriler çekilemedi. Lütfen internet bağlantınızı veya listenizi kontrol edin.")
-
-    if st.sidebar.button("Çıkış"):
-        st.session_state.auth = False
-        st.rerun()
+            st.warning("Seçilen hisseler için veri çekilemedi. Lütfen biraz sonra tekrar deneyin.")
