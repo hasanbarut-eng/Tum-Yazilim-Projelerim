@@ -8,14 +8,16 @@ import html
 import logging
 
 # --- LOG SİSTEMİ ---
+# Robotun çalışma adımlarını GitHub Actions loglarında görebilmen için mühürlendi.
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# --- YAPILANDIRMA (Kasa) ---
+# --- YAPILANDIRMA ---
+# GitHub Secrets üzerinden gelen mühürlü anahtarlar.
 TOKEN = os.getenv('TELEGRAM_TOKEN') 
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-def vip_hassas_denge_v15():
-    logging.info("🚀 Master V15: Hassas Dengeli Süzgeç (2.5 | 1.30 | 48-69) Başlatıldı...")
+def vip_full_portfoy_final_muhur():
+    logging.info("🚀 Master V17: 10 Hisse (4+3+3) Portföy Robotu Ateşlendi...")
     
     # 253 Hisselik Tam Listeniz
     hisseler = [
@@ -73,22 +75,15 @@ def vip_hassas_denge_v15():
         "ZOREN", "ZRGYO"
     ]
 
+    aday_havuzu = []
+
     for s in hisseler:
         try:
             ticker = yf.Ticker(f"{s}.IS")
-            
-            # Son 2 Haber
-            news = ticker.news
-            haber_metni = ""
-            if news:
-                for n in news[:2]:
-                    haber_metni += f"🔹 {n['title']}\n"
-            else:
-                haber_metni = "Güncel haber akışı saptanmadı."
-
             df = ticker.history(period="1y", interval="1d", auto_adjust=True)
             if df.empty or len(df) < 100: continue
 
+            # Teknik Göstergelerin Mühürlenmesi
             df['RSI'] = ta.rsi(df['Close'], length=14)
             df['SMA200'] = ta.sma(df['Close'], length=200)
             
@@ -99,41 +94,91 @@ def vip_hassas_denge_v15():
             h_son = df['Volume'].iloc[-1]
             pddd = ticker.info.get('priceToBook', 1.5)
 
-            # --- GÜNCEL MÜHÜRLÜ PARAMETRELER (2.5 | 1.30 | 48-69) ---
+            # --- KİŞİSELLEŞTİRİLMİŞ PARAMETRELER (2.5 | 1.30 | 48-69) ---
             if h_son > (h_ort * 2.5) and pddd <= 1.30 and 48 <= rsi <= 69:
                 
-                hedef_fiyat = round(fiyat * 1.18, 2)
-                kategori = "🚀 TAVAN ADAYI (AGRESİF)" if h_son > (h_ort * 4.0) else "🛡️ ORTA VADE YATIRIM"
+                # Çok Boyutlu Puanlama Sistemi
+                tavan_skoru = (h_son / h_ort) * 50 + (rsi / 69) * 50
+                orta_vade_skoru = (1 / pddd) * 60 + (rsi / 69) * 40
+                uzun_vade_skoru = (1 / (abs(fiyat - sma200) + 0.1)) * 50 + (1 / pddd) * 50
 
-                # Meşhur 6 Cümlelik Derin Analiz
-                yorum = (
-                    f"#{s} hissesinde teknik ve temel verilerin mühürlü bir uyumla çakıştığı saptanmıştır. "
-                    f"Matematiksel modelimiz normalin {round(h_son/h_ort, 1)} katı üzerindeki bu hacmi 'Akıllı Para Girişi' olarak mühürlemiştir. "
-                    f"Hissenin {round(pddd,2)} seviyesindeki PD/DD oranı, temel anlamda ciddi bir iskonto sunduğunu kanıtlar. "
-                    f"RSI indikatörünün {round(rsi,1)} seviyesinde dengelenmesi, yükseliş trendinin sağlıklı başladığını tescil etmektedir. "
-                    f"Belirlenen {hedef_fiyat} TL hedefi, mevcut formasyonun matematiksel beklentisini yansıtmaktadır. "
-                    f"Eğitim disiplini gereği, yatırım danışmanlığı kapsamında olmayan bu analizler Yatırım Tavsiyesi Değildir."
-                )
-                
-                telegram_gonder(s, fiyat, kategori, rsi, pddd, yorum, haber_metni, hedef_fiyat)
+                # Haber Entegrasyonu
+                news = ticker.news
+                haber_metni = "".join([f"🔹 {n['title']}\n" for n in news[:2]]) if news else "Haber akışı sakin."
 
-            time.sleep(0.4) 
-        except: continue
+                aday_havuzu.append({
+                    'kod': s, 'fiyat': fiyat, 'rsi': rsi, 'pddd': pddd, 
+                    'haber': haber_metni, 't_skor': tavan_skoru, 
+                    'o_skor': orta_vade_skoru, 'u_skor': uzun_vade_skoru
+                })
+            
+            # API Limiti için küçük bekleme
+            time.sleep(0.3)
+        except Exception as e:
+            logging.error(f"⚠️ {s} analizi sırasında hata: {e}")
+            continue
 
-def telegram_gonder(kod, fiyat, kategori, rsi, pddd, analiz, haberler, hedef):
-    msg = f"<b>{kategori}</b>\n"
-    msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+    # --- 10 HİSSELİK PORTFÖY SEÇİMİ (4+3+3) ---
+    final_portfoy = []
+    
+    # 1. EN İYİ 4 TAVAN ADAYI (Kısa Vade)
+    tavanlar = sorted(aday_havuzu, key=lambda x: x['t_skor'], reverse=True)[:4]
+    for x in tavanlar: 
+        x['kategori'] = "🚀 TAVAN ADAYI (KISA VADE)"
+        final_portfoy.append(x)
+    
+    # 2. EN İYİ 3 ORTA VADE (Daha önce seçilmemiş olanlardan)
+    kalan_havuz_1 = [i for i in aday_havuzu if i not in final_portfoy]
+    orta_vadeliler = sorted(kalan_havuz_1, key=lambda x: x['o_skor'], reverse=True)[:3]
+    for x in orta_vadeliler: 
+        x['kategori'] = "🛡️ ORTA VADE YATIRIM"
+        final_portfoy.append(x)
+    
+    # 3. EN İYİ 3 UZUN VADE (Daha önce seçilmemiş olanlardan)
+    kalan_havuz_2 = [i for i in aday_havuzu if i not in final_portfoy]
+    uzun_vadeliler = sorted(kalan_havuz_2, key=lambda x: x['u_skor'], reverse=True)[:3]
+    for x in uzun_vadeliler: 
+        x['kategori'] = "💎 UZUN VADE (AL-UNUT)"
+        final_portfoy.append(x)
+
+    # --- TELEGRAM MESAJLARININ GÖNDERİLMESİ ---
+    for hisse in final_portfoy:
+        potansiyel_hedef = round(hisse['fiyat'] * 1.18, 2) # Matematiksel %18 projeksiyon
+        
+        # Meşhur 6 Cümlelik Derin Analiz Metni
+        analiz_yorum = (
+            f"#{hisse['kod']} hissesinde teknik ve temel verilerin mühürlü bir uyumla çakıştığı saptanmıştır. "
+            f"Matematiksel modelimiz bu hisseyi {hisse['kategori']} kategorisinde en yüksek puanlılardan biri olarak belirlemiştir. "
+            f"Hissenin {round(hisse['pddd'],2)} seviyesindeki PD/DD oranı, temel anlamda ciddi bir iskonto sunduğunu kanıtlar. "
+            f"RSI indikatörünün {round(hisse['rsi'],1)} seviyesinde dengelenmesi, yükseliş trendinin sağlıklı başladığını tescil etmektedir. "
+            f"Belirlenen {potansiyel_hedef} TL hedefi, mevcut formasyonun matematiksel beklentisini yansıtmaktadır. "
+            f"Eğitim disiplini gereği, yatırım danışmanlığı kapsamında olmayan bu analizler Yatırım Tavsiyesi Değildir."
+        )
+        
+        telegram_mesaj_gonder(
+            hisse['kod'], hisse['fiyat'], hisse['kategori'], 
+            hisse['rsi'], hisse['pddd'], analiz_yorum, 
+            hisse['haber'], potansiyel_hedef
+        )
+
+def telegram_mesaj_gonder(kod, fiyat, kategori, rsi, pddd, analiz, haberler, hedef):
+    """Profesyonel Telegram çıktı formatı."""
+    msg = f"<b>{kategori}</b>\n━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"<b>#{kod} | Fiyat: {round(fiyat, 2)} TL</b>\n"
     msg += f"🎯 POTANSİYEL HEDEF: {hedef} TL\n\n"
     msg += f"💡 <b>DERİN ANALİZ:</b>\n{html.escape(analiz)}\n\n"
     msg += f"📊 RSI: {round(rsi, 1)} | PD/DD: {round(pddd, 2)}\n\n"
-    msg += f"🗞️ <b>SON 2 HABER:</b>\n{haberler}\n"
-    msg += f"⚖️ <i>Yatırım Tavsiyesi Değildir.</i>\n"
-    msg += f"────────────────────\n"
+    msg += f"🗞️ <b>SON HABERLER:</b>\n{haberler}\n"
+    msg += f"⚖️ <i>Yatırım Tavsiyesi Değildir.</i>\n────────────────────\n"
     msg += f"🔗 <a href='https://tr.tradingview.com/symbols/BIST-{kod}'>Grafiği Gör</a>"
 
-    requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
-                  data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True})
+    try:
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True}
+        requests.post(url, data=payload, timeout=10)
+    except Exception as e:
+        logging.error(f"🚀 Telegram gönderim hatası: {e}")
 
 if __name__ == "__main__":
-    vip_hassas_denge_v15()
+    # Robotun tek bir merkezden mühürlenmesi.
+    vip_full_portfoy_final_muhur()
