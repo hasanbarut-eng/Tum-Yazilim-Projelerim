@@ -1,24 +1,24 @@
 import requests
 import yfinance as yf
 import pandas as pd
+import pandas_ta as ta
+import numpy as np
+from sklearn.linear_model import LinearRegression
 from datetime import datetime
 import feedparser
 import urllib.parse
 import logging
 import sys
 
-# --- LOG AYARI (PowerShell'de akışı görmen için) ---
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+# --- LOG SİSTEMİ (PowerShell'de akışı izlemen için) ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
 class BorsaRobotuSenior:
     def __init__(self):
-        # Telegram Bilgilerin
         self.TOKEN = "8255121421:AAG1biq7jrgLFAbWmzOFs6D4wsPzoDUjYeM"
         self.CHAT_ID = "8479457745"
-        
-        # Senin için belirlediğimiz 10 çekirdek hisse (İstediğin kadar ekleme yapabilirsin)
-        self.hisse_listesi = [
-            "A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
+        # Hata veren delisted hisseler temizlenmiş çekirdek liste
+        self.hisseler = ["A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
     "AKBNK", "AKCNG", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 
     "AKYHO", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGEK", "ALGYO", "ALKA", "ALKIM", 
     "ALMAD", "ANELE", "ANGEN", "ANKTM", "ANLST", "ANSA", "ARASE", "ARCLK", "ARDYZ", "ARENA", 
@@ -66,92 +66,83 @@ class BorsaRobotuSenior:
     "UFUK", "ULAS", "ULFAK", "ULUSE", "ULUFA", "ULUN", "UMPAS", "USAK", "VAKBN", "VAKFN", 
     "VAKKO", "VANGD", "VBTYZ", "VERTU", "VERUS", "VESBE", "VESTL", "VKFYO", "VKGYO", "VKING", 
     "YAPRK", "YATAS", "YAYLA", "YBTAS", "YEOTK", "YESIL", "YGGYO", "YGYO", "YKBNK", "YKSLN", 
-    "YONGA", "YUNSA", "YYAPI", "YYLGD", "ZEDUR", "ZOREN", "ZRGYO"
-        ]
-        
-        # Haber Tarama Anahtarları
-        self.pozitif_kelimeler = ["ihale", "anlaşma", "kap", "pozitif", "rekor", "kar", "artış", "yatırım", "geri alım"]
+    "YONGA", "YUNSA", "YYAPI", "YYLGD", "ZEDUR", "ZOREN", "ZRGYO"]
+        self.pozitif_kelimeler = ["ihale", "anlaşma", "kap", "pozitif", "rekor", "kar", "artış", "yatırım"]
 
     def haber_skoru_al(self, hisse):
-        """Hisse haberlerini internetten tarar ve puan verir."""
         try:
             query = f"{hisse} borsa haber"
             url = f"https://news.google.com/rss/search?q={urllib.parse.quote(query)}&hl=tr&gl=TR&ceid=TR:tr"
             feed = feedparser.parse(url)
-            
-            for entry in feed.entries[:3]: # Son 3 habere bak
+            for entry in feed.entries[:3]:
                 if any(w in entry.title.lower() for w in self.pozitif_kelimeler):
                     return 1, entry.title
             return 0, ""
-        except:
-            return 0, ""
+        except: return 0, ""
+
+    def tahmin_motoru(self, df):
+        """Scikit-learn ile trend yönü tahmini yapar."""
+        try:
+            X = np.arange(len(df)).reshape(-1, 1)[-10:]
+            y = df['Close'].values[-10:]
+            model = LinearRegression().fit(X, y)
+            tahmin = model.predict([[len(df)]])[0]
+            return "YUKARI" if tahmin > df['Close'].iloc[-1] else "ASAGI"
+        except: return "BELIRSIZ"
 
     def analiz_yap(self):
-        logging.info("🚀 Analiz Başladı. Teknik veriler ve Haberler taranıyor...")
+        logging.info("🚀 Analiz Başladı. Teknik + Haber + Yapay Zeka devreye giriyor...")
         sonuclar = []
 
-        for h in self.hisse_listesi:
+        for h in self.hisseler:
             try:
-                # Veri İndirme (Düzeltilmiş Fiyatlarla)
                 df = yf.download(f"{h}.IS", period="60d", interval="1d", progress=False, auto_adjust=True)
                 if df.empty or len(df) < 20: continue
 
-                # --- PANDAS HATASI ÇÖZÜMÜ: .item() ile sayıya çeviriyoruz ---
-                fiyat = df['Close'].iloc[-1].item()
-                sma20 = df['Close'].rolling(20).mean().iloc[-1].item()
-                hacim_ort = df['Volume'].rolling(20).mean().iloc[-1].item()
-                son_hacim = df['Volume'].iloc[-1].item()
+                # PANDAS-TA İLE HESAPLAMA
+                df['RSI'] = ta.rsi(df['Close'], length=14)
+                df['SMA20'] = ta.sma(df['Close'], length=20)
                 
-                # RSI Hesaplama
-                delta = df['Close'].diff()
-                gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-                loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-                rsi = (100 - (100 / (1 + (gain / loss)))).iloc[-1].item()
+                # --- HATA ÇÖZÜMÜ: .item() ile Seriyi sayıya zorluyoruz ---
+                fiyat = df['Close'].iloc[-1].item()
+                rsi = df['RSI'].iloc[-1].item()
+                sma20 = df['SMA20'].iloc[-1].item()
+                
+                yon = self.tahmin_motoru(df)
 
-                # TEKNİK SKOR (3 Üzerinden)
-                t_skor = 0
-                if 30 <= rsi <= 65: t_skor += 1
-                if fiyat > sma20: t_skor += 1
-                if son_hacim > hacim_ort: t_skor += 1
+                # Skorlama
+                skor = 0
+                if 30 <= rsi <= 65: skor += 1
+                if fiyat > sma20: skor += 1
+                if yon == "YUKARI": skor += 1
 
-                # HABER SKORU (1 Üzerinden)
                 h_skor, manset = self.haber_skoru_al(h)
-                toplam = t_skor + h_skor
+                toplam = skor + h_skor
 
                 sonuclar.append({
-                    "Kod": h, "Fiyat": round(fiyat, 2), "RSI": round(rsi, 1),
+                    "Kod": h, "Fiyat": round(fiyat, 2), "Yon": yon,
                     "H_Skor": h_skor, "Manset": manset, "Toplam": toplam
                 })
-                logging.info(f"✅ {h} analiz edildi. Skor: {toplam}")
+                logging.info(f"✅ {h} analiz edildi. Tahmin: {yon} | Skor: {toplam}")
 
             except Exception as e:
-                logging.error(f"❌ {h} hatası: {e}")
+                logging.error(f"❌ {h} analiz hatası: {e}")
 
-        self.telegram_rapor(sonuclar)
+        self.raporla(sonuclar)
 
-    def telegram_rapor(self, veriler):
-        # Skoru 2 ve üzeri olanları, önce haberi olanları getirerek sırala
+    def raporla(self, veriler):
         iyiler = sorted([v for v in veriler if v['Toplam'] >= 2], key=lambda x: (-x['H_Skor'], -x['Toplam']))
-        
-        if not iyiler:
-            logging.warning("⚠️ Kriterlere uygun fırsat bulunamadı.")
-            return
+        if not iyiler: return
 
-        msg = f"📊 *STRATEJİK HABER ANALİZİ*\n📅 {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
-        for s in iyiler[:10]:
-            ikon = "🔥 [HABER VAR]" if s['H_Skor'] > 0 else "✅ [TEKNİK]"
-            msg += f"{ikon} *{s['Kod']}*\n💰 {s['Fiyat']} TL | Skor: {s['Toplam']}/4\n"
-            if s['Manset']:
-                msg += f"📰 _{s['Manset'][:65]}..._\n"
+        msg = f"🤖 *SENIOR HABER & TAHMİN RAPORU*\n\n"
+        for s in iyiler[:8]:
+            ikon = "🔥 [HABER]" if s['H_Skor'] > 0 else "📈"
+            msg += f"{ikon} *{s['Kod']}*\n💰 Fiyat: {s['Fiyat']} TL\n🎯 Yön: {s['Yon']} | Skor: {s['Toplam']}/4\n"
+            if s['Manset']: msg += f"📰 _{s['Manset'][:60]}..._\n"
             msg += "----------\n"
 
-        try:
-            requests.post(f"https://api.telegram.org/bot{self.TOKEN}/sendMessage", 
-                          data={"chat_id": self.CHAT_ID, "text": msg, "parse_mode": "Markdown"})
-            logging.info("🚀 Telegram raporu gönderildi!")
-        except Exception as e:
-            logging.error(f"Telegram hatası: {e}")
+        requests.post(f"https://api.telegram.org/bot{self.TOKEN}/sendMessage", data={"chat_id": self.CHAT_ID, "text": msg, "parse_mode": "Markdown"})
+        logging.info("🚀 Rapor Telegram'a gönderildi!")
 
-# --- ÇALIŞTIRICI ---
 if __name__ == "__main__":
     BorsaRobotuSenior().analiz_yap()
