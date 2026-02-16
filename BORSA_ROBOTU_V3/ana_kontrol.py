@@ -14,11 +14,64 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 TOKEN = os.getenv('TELEGRAM_TOKEN') 
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-def vip_sert_filtre_v11():
-    logging.info("🚀 Sertleştirilmiş VIP+ Filtre Devreye Alındı...")
+def vip_ozel_parametre_filtre():
+    logging.info("🚀 Kişiselleştirilmiş VIP Süzgeci Ateşlendi (3 | 1.10 | 50-68)...")
     
-    # 253 Hisselik listenizi buraya mühürleyin
-    hisseler = ["THYAO", "EREGL", "ASELS", "SISE", "AKBNK", "TUPRS", "KCHOL", "SASA", "HEKTS", "ASTOR", "ESEN"] 
+    # 253 Hisselik listenizi buraya tam olarak mühürleyin
+    hisseler = [
+        "A1CAP", "ACSEL", "ADESE", "ADGYO", "AEFES", "AFYON", "AGESA", "AGHOL", "AGROT", "AHGAZ", 
+        "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", 
+        "AKYHO", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGYO", "ALKA", "ALKIM", 
+        "ALMAD", "ANELE", "ANGEN", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", 
+        "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", 
+        "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", 
+        "BAGFS", "BAKAB", "BANVT", "BARMA", "BASCM", "BASGZ", "BAYRK", "BEGYO", "BERA", 
+        "BEYAZ", "BFREN", "BIGCH", "BIMAS", "BINHO", "BIOEN", "BIZIM", "BJKAS", "BLCYT", 
+        "BOBET", "BORLS", "BORSK", "BOSSA", "BRISA", "BRKO", "BRKSN", "BRKVY", "BRLSM", 
+        "BRMEN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", 
+        "CANTE", "CASA", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CIMSA", "CLEBI", 
+        "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CRFSA", "CUSAN", "CVKMD", "CWENE", 
+        "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DITAS", "DMSAS", "DNISI", 
+        "DOAS", "DOBUR", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", 
+        "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGGUB", "EGPRO", "EGSER", "EKGYO", 
+        "EKOS", "EKSUN", "ELITE", "EMKEL", "ENARI", "ENJSA", "ENKAI", "ENTRA", "ERBOS", 
+        "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUHOL", "EUKYO", "EUPWR", 
+        "EUREN", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FORTE", 
+        "FRIGO", "FROTO", "FZLGY", "GARAN", "GARFA", "GEDIK", "GEDZA", "GENTS", "GEREL", 
+        "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GOODY", "GOZDE", "GRNYO", 
+        "GRSEL", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HALKB", "HATEK", 
+        "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", 
+        "ICUGS", "IDGYO", "IEYHO", "IHEVA", "IHLGM", "IHLAS", "IHYAY", "IMASM", "INDES", 
+        "INFO", "INGRM", "INTEM", "INVEO", "INVES", "IPEKE", "ISCTR", "ISDMR", "ISFIN", 
+        "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISSEN", "ISYAT", "IZENR", "IZFAS", "IZINV", 
+        "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", 
+        "KCAER", "KCHOL", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRHO", 
+        "KLSYN", "KMPUR", "KNFRT", "KONKA", "KONTR", "KONYA", "KORDS", "KOTON", "KOZAL", 
+        "KOZAA", "KRDMA", "KRDMB", "KRDMD", "KRGYO", "KRONT", "KRSTL", "KRTEK", "KSTUR", 
+        "KUTPO", "KUVVA", "KUYAS", "KZBGY", "KZGYO", "LIDER", "LIDFA", "LINK", "LMKDC", 
+        "LOGO", "MAALT", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARTI", "MAVI", "MEDTR", 
+        "MEGAP", "MEKAG", "MEPET", "MERCN", "MERKO", "METRO", "METUR", "MHRGY", "MIATK", 
+        "MIPAZ", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MSGYO", "MTRKS", "MTRYO", 
+        "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NTHOL", "NUGYO", "NUHCM", "OBAMS", 
+        "OBASE", "ODAS", "ODINE", "ONCSM", "ORCAY", "ORGE", "ORMA", "OSMEN", "OSTIM", 
+        "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZGYO", "OZKGY", "OZRDN", "OZSUB", 
+        "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATEK", "PCILT", "PEKGY", "PENTA", 
+        "PETKM", "PETUN", "PGSUS", "PINSU", "PKART", "PKENT", "PNLSN", "PNSUT", "POLHO", 
+        "POLTK", "PRDGS", "PRKAB", "PRKME", "PRZMA", "PSGYO", "QUAGR", "RALYH", "RAYSG", 
+        "REEDR", "RNPOL", "RODRG", "RTALB", "RUBNS", "RYGYO", "RYSAS", "SAFKR", "SAHOL", 
+        "SAMAT", "SANEL", "SANFO", "SANKO", "SARKY", "SARTN", "SASA", "SAYAS", "SDTTR", 
+        "SEKFK", "SEKUR", "SELEC", "SELGD", "SELVA", "SEYKM", "SILVR", "SISE", "SKBNK", 
+        "SKTAS", "SMART", "SMRTG", "SNGYO", "SNICA", "SNKPA", "SOKE", "SOKM", "SONME", 
+        "SRVGY", "SUMAS", "SUNTC", "SURGY", "SUWEN", "TABGD", "TARKM", "TATEN", "TATGD", 
+        "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TERA", "TETMT", "TGSAS", "THYAO", 
+        "TIRE", "TKFEN", "TKNSA", "TMSN", "TNZTP", "TOASO", "TRCAS", "TRGYO", "TRILC", 
+        "TSKB", "TSGYO", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", 
+        "TURGG", "TURSG", "UFUK", "ULAS", "ULFAK", "ULUSE", "ULUFA", "ULUN", "USAK", 
+        "VAKBN", "VAKFN", "VAKKO", "VANGD", "VBTYZ", "VERTU", "VERUS", "VESBE", "VESTL", 
+        "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBTAS", "YEOTK", "YESIL", 
+        "YGGYO", "YGYO", "YKBNK", "YKSLN", "YONGA", "YUNSA", "YYAPI", "YYLGD", "ZEDUR", 
+        "ZOREN", "ZRGYO"
+    ]
 
     for s in hisseler:
         try:
@@ -37,31 +90,21 @@ def vip_sert_filtre_v11():
             h_son = df['Volume'].iloc[-1]
             pddd = ticker.info.get('priceToBook', 1.5)
 
-            # --- 1. KATEGORİ: TAVAN ADAYI (EKSTRA SERT) ---
-            # Hacim ortalamanın 4.5 katı ve RSI tam güç bölgesinde (62-75) olmalı
-            if h_son > (h_ort * 4.5) and 62 <= rsi <= 75:
+            # --- VERDİĞİNİZ KRİTERLERLE MÜHÜRLENDİ ---
+            # 1. Hacim Kat sayısı: 3.0+
+            # 2. PD/DD: 1.10 ve altı
+            # 3. RSI: 50 - 68 arası
+            
+            if h_son > (h_ort * 3.0) and pddd <= 1.10 and 50 <= rsi <= 68:
                 yorum = (
-                    f"#{s} hissesinde olağanüstü bir hacim patlaması saptanmıştır. "
-                    f"Matematiksel modelimiz normalin 4.5 katı üzerindeki bu hacmi 'Kurumsal Giriş' olarak mühürlemiştir. "
-                    f"RSI indikatörünün {round(rsi,1)} seviyesindeki dik duruşu, momentumun tavan serisine hazırlandığını kanıtlar. "
-                    f"Bu seviyelerdeki agresif toplama, kısa vadeli patlama potansiyelini en üst düzeye çıkarmaktadır. "
-                    f"Eğitim disipliniyle bu hacim onayı mutlaka yakından takip edilmelidir. "
+                    f"#{s} hissesinde teknik ve temel verilerin mühürlü bir uyumla çakıştığı saptanmıştır. "
+                    f"Matematiksel modelimiz normalin 3 katı üzerindeki bu hacmi 'Akıllı Para Girişi' olarak mühürlemiştir. "
+                    f"Hissenin {round(pddd,2)} seviyesindeki PD/DD oranı, temel anlamda çok ciddi bir iskonto sunduğunu kanıtlar. "
+                    f"RSI indikatörünün {round(rsi,1)} seviyesinde dengelenmesi, yükseliş trendinin sağlıklı başladığını tescil etmektedir. "
+                    f"Gerek hacim onayı gerekse temel ucuzluğu ile bu hisse VIP kategorisinde yakından takip edilmelidir. "
                     f"Yatırım Tavsiyesi Değildir."
                 )
-                telegram_gonder(s, fiyat, "🚀 TAVAN ADAYI (VİP ÖZEL)", rsi, pddd, yorum)
-
-            # --- 2. KATEGORİ: ORTA VADE (DERİN İSKONTO) ---
-            # Fiyat SMA200 üzerinde, RSI dengede ve PD/DD 0.95'in altında (Defter değerinin altında)
-            elif fiyat > sma200 and pddd < 0.95 and 45 <= rsi <= 55:
-                yorum = (
-                    f"#{s} hissesi defter değerinin altındaki {round(pddd,2)} PD/DD oranıyla 'Derin İskonto' bölgesinde mühürlenmiştir. "
-                    f"Matematiksel modelimiz bu hisseyi ORTA VADE (GÜVENLİ LİMAN 🛡️) olarak sınıflandırmaktadır. "
-                    f"SMA200 kalesi üzerindeki istikrarlı seyir, ana trendin bozulmadığını ve biriktirme aşamasında olduğunu kanıtlar. "
-                    f"Temel anlamda bu kadar ucuz kalmış bir hissenin orta vadeli potansiyeli oldukça yüksektir. "
-                    f"Disiplinli portföy yönetimi için bu iskontolu duruş bir fırsat olarak mühürlenmiştir. "
-                    f"Yatırım Tavsiyesi Değildir."
-                )
-                telegram_gonder(s, fiyat, "🛡️ ORTA VADE (VİP ÖZEL)", rsi, pddd, yorum)
+                telegram_gonder(s, fiyat, "🏆 MASTER VIP (ÖZEL SÜZGEÇ)", rsi, pddd, yorum)
 
             time.sleep(0.4) 
         except: continue
@@ -79,4 +122,4 @@ def telegram_gonder(kod, fiyat, kategori, rsi, pddd, analiz):
                   data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True})
 
 if __name__ == "__main__":
-    vip_sert_filtre_v11()
+    vip_ozel_parametre_filtre()
