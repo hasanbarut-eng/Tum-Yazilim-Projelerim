@@ -2,12 +2,16 @@ name: Borsa V3 Stratejik Analiz
 
 on:
   schedule:
-    # Türkiye saatine (UTC+3) göre mühürlenmiş 4 seans vakti
-    - cron: '50 06 * * 1-5'  # 09:50 TSİ (Sabah Hazırlık)
-    - cron: '00 10 * * 1-5'  # 13:00 TSİ (Öğle Analizi)
-    - cron: '30 14 * * 1-5'  # 17:30 TSİ (Seans Sonu Fırsatları)
-    - cron: '15 15 * * 1-5'  # 18:15 TSİ (Kapanış Onayı)
-  workflow_dispatch:        # Telefonundan "Run Workflow" diyerek manuel tetikleme sağlar
+    # 🛑 SADECE PAZARTESİ - CUMA (Hafta sonu ateşleme yok!)
+    # Dakika | Saat (UTC) | Gün | Ay | Haftanın Günü (1=Pzt, 5=Cum)
+    
+    - cron: '30 06 * * 1-5'  # 🇹🇷 TR Saati: 09:30 (Açılış Sinyalleri)
+    - cron: '15 07 * * 1-5'  # 🇹🇷 TR Saati: 10:15 (Trend Teyidi)
+    - cron: '00 10 * * 1-5'  # 🇹🇷 TR Saati: 13:00 (Öğle Arası)
+    - cron: '40 14 * * 1-5'  # 🇹🇷 TR Saati: 17:40 (Kapanış Öncesi)
+    - cron: '15 15 * * 1-5'  # 🇹🇷 TR Saati: 18:15 (Gün Sonu Özeti)
+
+  workflow_dispatch:        # İstediğinde manuel ateşlemek için bu da kalsın.
 
 jobs:
   run_analysis:
