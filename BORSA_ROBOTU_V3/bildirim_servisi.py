@@ -8,28 +8,49 @@ class BildirimServisi:
     def rapor_gonder(self, adaylar, riskli_olanlar):
         # 1. Pozitif Sinyaller (En iyi 6 skor)
         if adaylar:
-            adaylar.sort(key=lambda x: x['ai_skor'], reverse=True)
+            # Skorlara göre büyükten küçüğe sırala
+            adaylar.sort(key=lambda x: x['ai_skor'], reverse=True) 
+            
             for a in adaylar[:6]:
+                # Karmaşık tablo yerine net etiketli Senior tasarımı
                 mesaj = (
                     f"🚀 <b>{a['durum']} | #{a['sembol']}</b>\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"⚠️ <i>Yatırım tavsiyesi değildir.</i>\n\n"
-                    f"| 🛡️ SEMBOL | 💰 FİYAT | 📈 DEĞİŞİM | 📊 SKOR |\n"
-                    f"| <b>#{a['sembol']}</b> | {a['fiyat']} TL | %{a['degisim']} | <b>%{a['ai_skor']}</b> |\n\n"
-                    f"| 🔥 HACİM | 📉 PD/DD | 📉 RSI | 🎯 DİRENÇ |\n"
-                    f"| <b>{a['hacim_kat']}x</b> | {a['pddd']} | {a['rsi']} | <b>{a['direnc']}</b> |\n\n"
-                    f"💡 <b>DERİN ANALİZ:</b>\n<i>{a['analiz']}</i>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━"
+                    f"💰 <b>Fiyat:</b> {a['fiyat']} TL\n"
+                    f"📈 <b>Günlük Değişim:</b> %{a['degisim']}\n"
+                    f"📊 <b>Yapay Zeka Skoru:</b> %{a['ai_skor']}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🔥 <b>Hacim Gücü:</b> {a['hacim_kat']}x\n"
+                    f"📉 <b>PD/DD:</b> {a['pddd']}\n"
+                    f"📉 <b>RSI Değeri:</b> {a['rsi']}\n"
+                    f"🎯 <b>Hedef Direnç:</b> {a['direnc']}\n"
+                    f"🛡️ <b>Alt Destek:</b> {a['destek']}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💡 <b>DERİN ANALİZ:</b>\n"
+                    f"<i>{a['analiz']}</i>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"⚠️ <i>Yatırım tavsiyesi değildir.</i>"
                 )
                 self._gonder(mesaj)
 
         # 2. Riskli Sinyaller
         if riskli_olanlar:
             for r in riskli_olanlar:
-                r_mesaj = f"🚨 <b>KRİTİK RİSK UYARISI | #{r['sembol']}</b>\n━━━━━━━━━━━━━━━━━━━━\n{r['mesaj']}"
+                r_mesaj = (
+                    f"🚨 <b>KRİTİK RİSK UYARISI | #{r['sembol']}</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"⚠️ <b>Dikkat:</b> {r['mesaj']}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━"
+                )
                 self._gonder(r_mesaj)
 
     def _gonder(self, metin):
         try:
-            requests.post(self.url, json={"chat_id": self.chat_id, "text": metin, "parse_mode": "HTML"}, timeout=10)
-        except: pass
+            # HTML parse mode ile mesajı gönder
+            requests.post(self.url, json={
+                "chat_id": self.chat_id, 
+                "text": metin, 
+                "parse_mode": "HTML"
+            }, timeout=10)
+        except Exception as e:
+            print(f"Bildirim Hatası: {e}")
