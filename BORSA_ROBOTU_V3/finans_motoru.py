@@ -1,60 +1,57 @@
 import pandas as pd
 import numpy as np
 import pandas_ta as ta
-import logging
 
 class FinansMotoru:
     def __init__(self):
-        self.pddd_limit = 1.5
-        self.fdo_alt, self.fdo_ust = 0.20, 0.35
-        self.hedef_katsayi = 1.347
+        self.pddd_limit = 2.5
+        self.ani_dusus_esigi = -3.5
 
-    def analiz_et(self, sembol, veri_gunluk, veri_haftalik, info):
+    def analiz_et(self, sembol, df, info):
         try:
-            kapanis = float(veri_gunluk['Close'].iloc[-1])
-            pddd = info.get('priceToBook', 0) or 0
-            if pddd > self.pddd_limit: return None
+            # 🛡️ GÜVENLİK: Veri yetersizse iloc hatasını engelle
+            if df is None or df.empty or len(df) < 20:
+                return None
 
-            # --- TEKNİK SÜZGEÇLER ---
-            rsi = ta.rsi(veri_gunluk['Close'], length=14).iloc[-1]
-            avg_vol = veri_gunluk['Volume'].tail(20).mean()
-            current_vol = veri_gunluk['Volume'].iloc[-1]
-            vol_shock = current_vol > (avg_vol * 1.8) # Hacim patlaması
-
-            # Haftalık Trend (SMA 20/50)
-            sma20_w = ta.sma(veri_haftalik['Close'], length=20).iloc[-1]
-            sma50_w = ta.sma(veri_haftalik['Close'], length=50).iloc[-1]
-            trend_onay = kapanis > sma20_w and kapanis > sma50_w
-
-            # FDO Süzgeci
-            fdo = (info.get('floatShares', 0) / info.get('sharesOutstanding', 1)) if info.get('sharesOutstanding') else 0
-            is_elmas = self.fdo_alt <= fdo <= self.fdo_ust
-
-            # Puanlama ve Vade
-            puan = 0
-            if 50 < rsi < 85: puan += 2
-            if trend_onay: puan += 2
-            if vol_shock: puan += 1
+            kapanis = float(df['Close'].iloc[-1])
+            acilis = float(df['Open'].iloc[-1])
+            dun_kapanis = float(df['Close'].iloc[-2])
+            gunluk_degisim = ((kapanis / dun_kapanis) - 1) * 100
             
-            if puan < 3: return None
+            pddd_raw = info.get('priceToBook')
+            pddd = float(pddd_raw) if (pddd_raw is not None and not isinstance(pddd_raw, str)) else 0.0
 
-            vade = "ORTA VADE (Trend Takibi)" if trend_onay else "KISA VADE (Momentum)"
-            yorum = self._strateji_olustur(sembol, rsi, vol_shock, trend_onay, pddd)
+            if gunluk_degisim < self.ani_dusus_esigi:
+                return {"sembol": sembol, "durum": "TEHLIKE", "mesaj": f"#{sembol} ani çöküş (%{round(gunluk_degisim,2)})!"}
+
+            rsi_series = ta.rsi(df['Close'], length=14)
+            if rsi_series is None or rsi_series.empty: return None
+            rsi = rsi_series.iloc[-1]
+            
+            avg_vol = df['Volume'].tail(20).mean()
+            vol_kat = round(df['Volume'].iloc[-1] / avg_vol, 1)
+
+            if not (kapanis > dun_kapanis and kapanis > acilis) or pddd > self.pddd_limit or pddd <= 0:
+                return None
+
+            # Pivot direnç/destek mühürü
+            L_H, L_L, L_C = float(df['High'].iloc[-2]), float(df['Low'].iloc[-2]), float(df['Close'].iloc[-2])
+            pivot = (L_H + L_L + L_C) / 3
+            res1 = (2 * pivot) - L_L
+            sup1 = (2 * pivot) - L_H
+
+            puan = 0
+            if 50 <= rsi <= 78: puan += 30
+            if vol_kat >= 1.7: puan += 40
+            if kapanis > res1: puan += 30
+
+            if puan < 65: return None
 
             return {
-                "sembol": sembol, "fiyat": round(kapanis, 2), "vade": vade, "yorum": yorum,
-                "ai_skor": min(max(int((rsi * 0.5) + (puan * 12)), 5), 99),
-                "pddd": round(float(pddd), 2), "fdo": round(fdo * 100, 1),
-                "is_elmas": is_elmas, 
-                "status": "🔥 TAVAN ADAYI" if vol_shock and is_elmas else "🚀 ELMAS" if is_elmas else "📈 GÜÇLÜ"
+                "sembol": sembol, "fiyat": round(kapanis, 2), "degisim": round(gunluk_degisim, 2),
+                "ai_skor": puan, "hacim_kat": vol_kat, "pddd": round(pddd, 2),
+                "destek": round(sup1, 2), "direnc": round(res1, 2), "rsi": round(rsi, 1),
+                "analiz": f"#{sembol} {vol_kat}x hacimle direnci zorluyor. RSI={round(rsi,1)} momentum güçlü.",
+                "durum": "🔥 TAVAN ADAYI" if vol_kat >= 2.0 and gunluk_degisim > 3.5 else "🚀 MOMENTUM"
             }
-        except: return None
-
-    def _strateji_olustur(self, sembol, rsi, vol_shock, trend, pddd):
-        """Mutabık kaldığımız 5 cümlelik analist yorumu"""
-        c1 = f"#{sembol} hissesi, PD/DD oranı {pddd} ile temel anlamda iskontolu bir bölgededir. "
-        c2 = "Hacimdeki ani artış, akıllı paranın bu seviyelerden toplama yaptığını kanıtlıyor. " if vol_shock else "Hisse dip bölgesinden dönüş çabası içindedir. "
-        c3 = "Haftalık 20 ve 50 günlük ortalamaların üzerinde kalması trendi mühürlemiştir. " if trend else "Kısa vadeli momentumun artmasıyla dirençlerin aşılması beklenmektedir. "
-        c4 = "RSI değerinin güçlenmesi yakında sert bir kopuşun (breakout) yaşanabileceğini işaret ediyor. "
-        c5 = "Bu strateji kapsamında, stop seviyesine sadık kalarak patlama potansiyeli izlenmelidir."
-        return c1 + c2 + c3 + c4 + c5
+        except Exception: return None
